@@ -1,1 +1,1 @@
-# Promtify
+# Promptify
