@@ -1,0 +1,7 @@
+# Ignore the virtual environment
+.venv/
+
+# Ignore python cache files (these appear when you run tests)
+__pycache__/
+*.pyc
+.pytest_cache/
