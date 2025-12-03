@@ -15,7 +15,11 @@ class AIRecommendationParams(BaseModel):
     # Required Fields
     seeds: Dict[str, str] = Field(
         ..., 
-        description="A dictionary that MUST contain two key-value pairs: 'track_name' (string) and 'artist_name' (string). The model must output both keys."
+        description=(
+            "Dictionary with two required keys: 'track_name' (string) and 'artist_name' (string). "
+            "Represents the seed track for recommendations. "
+            "If a track is not specified by the user, select one based on their described mood or genre."
+        )
     )
     
     acousticness: Optional[float] = Field(
