@@ -1,15 +1,15 @@
 import pytest
 from pydantic import ValidationError
 import copy
-from recommendation_params import AIRecommendationParams, ReccoRecommendationParams, NUMBER_OF_RECOMMENDATIONS
-from typing import List
+from recommendation_params import AIRecommendationParams, NUMBER_OF_RECOMMENDATIONS
+# from typing import List
 # ==============================================================================
 # TEST DATA SETUP
 # ==============================================================================
 
 # Base data that is valid for the AI input model
 BASE_VALID_DATA = {
-    'ai_choice_seed_track': {'track_name': 'Townie', 'artist_name': 'Mitski'},
+    'seeds': {'track_name': 'Townie', 'artist_name': 'Mitski'},
     'energy': 0.8,
     'valence': 0.5,
     'featureWeight': 3.0,
@@ -31,7 +31,7 @@ def test_ai_params_valid_creation():
     """Tests successful creation with base data and checks nested dict access."""
     params = AIRecommendationParams(**BASE_VALID_DATA)
     assert params.energy == 0.8
-    assert params.ai_choice_seed_track['artist_name'] == 'Mitski'
+    assert params.seeds['artist_name'] == 'Mitski'
 
 @pytest.mark.parametrize("field, invalid_value", [
     ("energy", 1.01),      # Must be <= 1.0
@@ -51,7 +51,7 @@ def test_ai_params_value_constraints(field, invalid_value):
 def test_ai_params_missing_required_field():
     """Tests that the model requires the nested seed track dictionary."""
     data = copy.deepcopy(BASE_VALID_DATA)
-    del data['ai_choice_seed_track']
+    del data['seeds']
     
     with pytest.raises(ValidationError):
         AIRecommendationParams(**data)
@@ -59,7 +59,7 @@ def test_ai_params_missing_required_field():
 def test_ai_params_coercion():
     """Tests that Pydantic correctly converts string representations to float/int."""
     data_str = {
-        'ai_choice_seed_track': {'track_name': 'Title', 'artist_name': 'Artist'},
+        'seeds': {'track_name': 'Title', 'artist_name': 'Artist'},
         'energy': "0.85",
         'popularity': "70",
     }
@@ -74,59 +74,59 @@ def test_ai_params_coercion():
 # TESTS FOR ReccoBeatsRequest (API Contract Validation)
 # ==============================================================================
 
-def test_reccobeats_request_valid_creation():
-    """Tests successful creation of the final API model."""
-    request = ReccoRecommendationParams(**RECCO_REQUEST_DATA)
-    assert request.size == NUMBER_OF_RECOMMENDATIONS
-    assert request.seeds == ['ID12345']
-    assert request.energy == 0.8 # Check inherited field is present
+# def test_reccobeats_request_valid_creation():
+#     """Tests successful creation of the final API model."""
+#     request = ReccoRecommendationParams(**RECCO_REQUEST_DATA)
+#     assert request.size == NUMBER_OF_RECOMMENDATIONS
+#     assert request.seeds == ['ID12345']
+#     assert request.energy == 0.8 # Check inherited field is present
 
-@pytest.mark.parametrize("seeds_list", [
-    [],                       # Fails min_length=1
-    ['A', 'B', 'C', 'D', 'E', 'F'] # Fails max_length=5
-])
-def test_reccobeats_request_seed_length_validation(seeds_list: List[str]):
-    """Tests that the strict seeds length constraint (1 <= length <= 5) is enforced."""
-    invalid_data = copy.deepcopy(RECCO_REQUEST_DATA)
-    invalid_data['seeds'] = seeds_list
+# @pytest.mark.parametrize("seeds_list", [
+#     [],                       # Fails min_length=1
+#     ['A', 'B', 'C', 'D', 'E', 'F'] # Fails max_length=5
+# ])
+# def test_reccobeats_request_seed_length_validation(seeds_list: List[str]):
+#     """Tests that the strict seeds length constraint (1 <= length <= 5) is enforced."""
+#     invalid_data = copy.deepcopy(RECCO_REQUEST_DATA)
+#     invalid_data['seeds'] = seeds_list
     
-    with pytest.raises(ValidationError):
-        ReccoRecommendationParams(**invalid_data)
+#     with pytest.raises(ValidationError):
+#         ReccoRecommendationParams(**invalid_data)
 
-def test_to_query_params_removes_ai_choice_seed_track():
-    """Tests the CRITICAL exclusion logic: the API should not see the search dict."""
-    request = ReccoRecommendationParams(**RECCO_REQUEST_DATA)
-    params = request.to_query_params()
+# def test_to_query_params_removes_ai_choice_seed_track():
+#     """Tests the CRITICAL exclusion logic: the API should not see the search dict."""
+#     request = ReccoRecommendationParams(**RECCO_REQUEST_DATA)
+#     params = request.to_query_params()
     
-    # CRITICAL CHECK: The intermediate search object MUST NOT be in the final API payload
-    assert 'ai_choice_seed_track' not in params
+#     # CRITICAL CHECK: The intermediate search object MUST NOT be in the final API payload
+#     assert 'ai_choice_seed_track' not in params
     
-    # Check that required API fields and one optional feature ARE present
-    assert 'seeds' in params
-    assert 'size' in params
-    assert 'energy' in params
+#     # Check that required API fields and one optional feature ARE present
+#     assert 'seeds' in params
+#     assert 'size' in params
+#     assert 'energy' in params
 
-def test_to_query_params_removes_none_values():
-    """Tests that optional fields not set (None) are correctly excluded."""
-    data_small = {
-        'ai_choice_seed_track': {'track_name': 'T', 'artist_name': 'A'},
-        'energy': 0.7,
-        'seeds': ['ID1'],
-        'size': 10
-        # All other optional fields are None
-    }
-    request = ReccoRecommendationParams(**data_small)
-    params = request.to_query_params()
+# def test_to_query_params_removes_none_values():
+#     """Tests that optional fields not set (None) are correctly excluded."""
+#     data_small = {
+#         'ai_choice_seed_track': {'track_name': 'T', 'artist_name': 'A'},
+#         'energy': 0.7,
+#         'seeds': ['ID1'],
+#         'size': 10
+#         # All other optional fields are None
+#     }
+#     request = ReccoRecommendationParams(**data_small)
+#     params = request.to_query_params()
     
-    # Expected keys: seeds, size, energy. All others excluded.
-    assert 'energy' in params
-    assert 'valence' not in params 
-    assert len(params) == 3 
+#     # Expected keys: seeds, size, energy. All others excluded.
+#     assert 'energy' in params
+#     assert 'valence' not in params 
+#     assert len(params) == 3 
 
-def test_inheritance_of_constraints():
-    """Tests that the ReccoBeatsRequest inherits the parent's constraints (e.g., energy)."""
-    invalid_data = copy.deepcopy(RECCO_REQUEST_DATA)
-    invalid_data['energy'] = 1.0001 # Invalid for parent class
+# def test_inheritance_of_constraints():
+#     """Tests that the ReccoBeatsRequest inherits the parent's constraints (e.g., energy)."""
+#     invalid_data = copy.deepcopy(RECCO_REQUEST_DATA)
+#     invalid_data['energy'] = 1.0001 # Invalid for parent class
     
-    with pytest.raises(ValidationError):
-        ReccoRecommendationParams(**invalid_data)
+#     with pytest.raises(ValidationError):
+#         ReccoRecommendationParams(**invalid_data)

@@ -13,7 +13,7 @@ class AIRecommendationParams(BaseModel):
     """
     
     # Required Fields
-    ai_choice_seed_track: Dict[str, str] = Field(
+    seeds: Dict[str, str] = Field(
         ..., 
         description="A dictionary that MUST contain two key-value pairs: 'track_name' (string) and 'artist_name' (string). The model must output both keys."
     )
@@ -99,29 +99,29 @@ class AIRecommendationParams(BaseModel):
         return self.model_dump(exclude_none=True)
 
 
-# ==========================================
-# 2. API MODEL (What ReccoBeats Receives)
-# ==========================================
-class ReccoRecommendationParams(AIRecommendationParams):
-    """
-    The final payload for the API.
-    Overrides the 'seed_track' logic with strict 'seeds' ID list.
-    """
+# # ==========================================
+# # 2. API MODEL (What ReccoBeats Receives)
+# # ==========================================
+# class ReccoRecommendationParams(AIRecommendationParams):
+#     """
+#     The final payload for the API.
+#     Overrides the 'seed_track' logic with strict 'seeds' ID list.
+#     """
     
-    # STRICT API REQUIREMENT: string[], size 1..5
-    seeds: List[str] = Field(
-        ..., 
-        min_length=1, 
-        max_length=5,
-        description="List of Spotify Track IDs. Required. Min 1, Max 5."
-    )
+#     # STRICT API REQUIREMENT: string[], size 1..5
+#     seeds: List[str] = Field(
+#         ..., 
+#         min_length=1, 
+#         max_length=5,
+#         description="List of Spotify Track IDs. Required. Min 1, Max 5."
+#     )
     
-    # App-controlled size (not AI controlled)
-    size: int = Field(NUMBER_OF_RECOMMENDATIONS, ge=1, le=100)
+#     # App-controlled size (not AI controlled)
+#     size: int = Field(NUMBER_OF_RECOMMENDATIONS, ge=1, le=100)
 
-    def to_query_params(self):
-        """
-        Formats data for the API request.
-        """
-        data = self.model_dump(exclude_none=True, exclude={'ai_choice_seed_track'})
-        return data
+#     def to_query_params(self):
+#         """
+#         Formats data for the API request.
+#         """
+#         data = self.model_dump(exclude_none=True, exclude={'ai_choice_seed_track'})
+#         return data
