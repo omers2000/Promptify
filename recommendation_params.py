@@ -2,7 +2,7 @@ from typing import Optional, Dict
 from pydantic import BaseModel, Field
 
 NUMBER_OF_RECOMMENDATIONS = 20
-FEATURE_WEIGHT = 5
+FEATURE_WEIGHT = 5.0
 
 # ==========================================
 # 1. AI MODEL (What Gemini Sees)
@@ -51,11 +51,6 @@ class AIRecommendationParams(BaseModel):
     popularity: Optional[int] = Field(
         None, ge=0, le=100, 
         description="Track popularity (0-100)."
-    )
-    
-    featureWeight: Optional[float] = Field(
-        None, ge=1, le=5, 
-        description="Scales the influence of audio feature queries by multiplying each feature before averaging."
     )
 
     @property
