@@ -2,6 +2,7 @@ from typing import Optional, Dict
 from pydantic import BaseModel, Field
 
 NUMBER_OF_RECOMMENDATIONS = 20
+FEATURE_WEIGHT = 5
 
 # ==========================================
 # 1. AI MODEL (What Gemini Sees)
@@ -76,4 +77,5 @@ class AIRecommendationParams(BaseModel):
         # exclude_none=True removes all the optional fields we didn't use
         params_dict =  self.model_dump(exclude_none=True)
         params_dict['size'] = NUMBER_OF_RECOMMENDATIONS
+        params_dict['featureWeight'] = FEATURE_WEIGHT
         return params_dict
