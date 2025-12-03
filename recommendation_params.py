@@ -96,7 +96,9 @@ class AIRecommendationParams(BaseModel):
         removing keys that were not set (None).
         """
         # exclude_none=True removes all the optional fields we didn't use
-        return self.model_dump(exclude_none=True)
+        params_dict =  self.model_dump(exclude_none=True)
+        params_dict['size'] = NUMBER_OF_RECOMMENDATIONS
+        return params_dict
 
 
 # # ==========================================
