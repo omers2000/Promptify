@@ -1,4 +1,4 @@
-from typing import Optional, List, Dict
+from typing import Optional, Dict
 from pydantic import BaseModel, Field
 
 NUMBER_OF_RECOMMENDATIONS = 20
@@ -52,6 +52,17 @@ class AIRecommendationParams(BaseModel):
         None, ge=1, le=5, 
         description="Scales the influence of audio feature queries by multiplying each feature before averaging."
     )
+
+    @property
+    def track_name(self) -> str:
+        """Retrieves the track name from the nested seeds dictionary."""
+        # Use .get() for safety, though Pydantic should ensure the key exists.
+        return self.seeds.get('track_name', '')
+
+    @property
+    def artist_name(self) -> str:
+        """Retrieves the artist name from the nested seeds dictionary."""
+        return self.seeds.get('artist_name', '')
 
     def to_query_params(self):
         """
