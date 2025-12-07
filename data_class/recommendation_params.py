@@ -1,8 +1,6 @@
 from typing import Optional, Dict
 from pydantic import BaseModel, Field
-
-NUMBER_OF_RECOMMENDATIONS = 20
-FEATURE_WEIGHT = 5.0
+from config.model_consts import NUMBER_OF_RECOMMENDATIONS, FEATURE_WEIGHT
 
 # ==========================================
 # 1. AI MODEL (What Gemini Sees)
