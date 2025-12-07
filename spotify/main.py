@@ -1,5 +1,5 @@
-from auth import Auth
-from spotify_requests import UserRequests, SearchRequests
+from spotify.auth import Auth
+from spotify.spotify_requests import UserRequests, SearchRequests
 from config.spotify_consts import CLIENT_ID, CLIENT_SECRET
 
 def main():
@@ -21,8 +21,8 @@ def main():
         profile = user_requests.get_profile()
         tracks = user_requests.get_top_tracks()
 
-        search_test = search_requests.get_id_by_song("Shape of you", "Ed Sheeran")
-        print("Track ID for 'Shape of you' by Ed Sheeran:", search_test)
+        # search_test = search_requests.get_id_by_song("Shape of you", "Ed Sheeran")
+        # print("Track ID for 'Shape of you' by Ed Sheeran:", search_test)
 
         # Search for tracks and parse results
         # search_results = search_requests.search_track("track:Shape of you artist:Ed Sheeran", limit=5)
@@ -42,6 +42,7 @@ def main():
         #     public=False,
         #     songs=[track["uri"] for track in tracks["items"]]
         # )
+        print(tracks)
 
     except Exception as exc:
         print("Authentication failed:", exc)

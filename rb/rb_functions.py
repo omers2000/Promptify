@@ -1,5 +1,5 @@
 import json, re
-from request_sender import request_sender
+from rb.request_sender import request_sender
 from config.rb_consts import HEADERS, REC_URL
 
 def get_recommendations(params: dict) -> str:

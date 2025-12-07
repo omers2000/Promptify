@@ -1,5 +1,5 @@
 import spotipy
-from config import spotify_consts
+from config.spotify_consts import REDIRECT_URI, SCOPE
 from spotipy.oauth2 import SpotifyOAuth
 class Auth():
     def __init__(self, client_id: str, client_secret: str):
@@ -8,8 +8,8 @@ class Auth():
         self.auth_manager = SpotifyOAuth(
             client_id=self.client_id,
             client_secret=self.client_secret,
-            redirect_uri=spotify_consts.REDIRECT_URI,
-            scope=spotify_consts.SCOPE,
+            redirect_uri=REDIRECT_URI,
+            scope=SCOPE,
             open_browser=True)
         
     def get_client(self) -> spotipy.Spotify:
