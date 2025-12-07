@@ -17,10 +17,10 @@ class LlmPromptInterpreter:
             "Select the most iconic, universally recognized anthem for this specific request. Pick a song everyone knows and loves.",
             
             # 3. The Balanced DJ (Middle ground)
-            "Select a song that is well-respected in the genre but not overplayed. Balance popularity with quality.",
+            "Select a song that is well-respected in the genre but not overplayed. Balance popularity with quality."
             
             # 4. The Chaos Agent (Wildcard)
-            "Pick a song that is technically correct for the genre but might be a surprising or unconventional choice."
+            # "Pick a song that is technically correct for the genre but might be a surprising or unconventional choice."
         ]
 
     def interpret(self, user_prompt: str) -> AIRecommendationParams:
