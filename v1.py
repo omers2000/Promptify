@@ -1,6 +1,7 @@
 from spotify.auth import Auth
 from spotify.spotify_requests import UserRequests, SearchRequests
 from rb.rb_functions import get_recommendations_ids_by_params
+from llm.llm_prompt_interpreter import LlmPromptInterpreter
 
 def _get_client_credentials():
     print("Please enter your Spotify Client ID:")
@@ -24,14 +25,28 @@ def main():
     # get playlist description from user
     print("Please enter a description for your new playlist:")
     playlist_description = input().strip()
-    # params = get_params_from_model(playlist_description) ## Daniel needs to implement this function
-    params = {'track_name': 'Espresso', 'artist_name': 'Sabrina Carpenter', 'acousticness': 0.1, 'energy': 0.8, 'valence': 0.5, 'featureWeight': 3.0, 'size': 20}
+
+    # Setup Gemini
+    print("Please enter your Google Gemini API Key:")
+    google_api_key = input().strip()
+    print("Analyzing prompt with Gemini...")
+    interpreter = LlmPromptInterpreter(api_key=google_api_key)
+
+    try:
+        ai_params_object = interpreter.interpret(playlist_description)
+        params = ai_params_object.to_query_params()
+        seeds = params.get("seeds")
+        print(f"Selected Seed: {seeds.get('track_name')} by {seeds.get('artist_name')}")
+        print(f"Track recommendation params: {params}")
+
+    except Exception as e:
+        print(f"An error occurred: {e}")
 
     # get recommendations
-    seed_spot_id = search_requests.get_id_by_song(params['track_name'], params['artist_name'])
+    seed_spot_id = search_requests.get_id_by_song(seeds['track_name'], seeds['artist_name'])
     params['seeds'] = seed_spot_id
-    params.pop('track_name')
-    params.pop('artist_name')
+    # params.pop('track_name')
+    # params.pop('artist_name')
     rec_track_ids = get_recommendations_ids_by_params(params)
 
     # create playlist

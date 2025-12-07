@@ -1,4 +1,4 @@
-from typing import Optional, Dict
+from typing import Optional
 from pydantic import BaseModel, Field
 from config.model_consts import NUMBER_OF_RECOMMENDATIONS, FEATURE_WEIGHT
 
@@ -74,5 +74,5 @@ class AIRecommendationParams(BaseModel):
         # exclude_none=True removes all the optional fields we didn't use
         params_dict =  self.model_dump(exclude_none=True)
         params_dict['size'] = NUMBER_OF_RECOMMENDATIONS
-        params_dict['featureWeight'] = FEATURE_WEIGHT
+        # params_dict['featureWeight'] = FEATURE_WEIGHT
         return params_dict
