@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 import copy
-from recommendation_params import AIRecommendationParams, NUMBER_OF_RECOMMENDATIONS
+from data_class.recommendation_params import AIRecommendationParams, NUMBER_OF_RECOMMENDATIONS
 
 # ==============================================================================
 # TEST DATA SETUP
