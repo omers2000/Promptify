@@ -45,8 +45,6 @@ def main():
     # get recommendations
     seed_spot_id = search_requests.get_id_by_song(seeds['track_name'], seeds['artist_name'])
     params['seeds'] = seed_spot_id
-    # params.pop('track_name')
-    # params.pop('artist_name')
     rec_track_ids = get_recommendations_ids_by_params(params)
 
     # create playlist
