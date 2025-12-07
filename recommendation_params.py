@@ -4,6 +4,10 @@ from pydantic import BaseModel, Field
 NUMBER_OF_RECOMMENDATIONS = 20
 FEATURE_WEIGHT = 5.0
 
+class SeedInfo(BaseModel):
+    track_name: str = Field(..., description="The name of the track")
+    artist_name: str = Field(..., description="The name of the artist")
+
 # ==========================================
 # 1. AI MODEL (What Gemini Sees)
 # ==========================================
@@ -14,10 +18,10 @@ class AIRecommendationParams(BaseModel):
     """
     
     # Required Fields
-    seeds: Dict[str, str] = Field(
+    seeds: SeedInfo = Field(
         ..., 
         description=(
-            "Dictionary with two required keys: 'track_name' (string) and 'artist_name' (string). "
+            "Object containing 'track_name' and 'artist_name'. "
             "Represents the seed track for recommendations. "
             "If a track is not specified by the user, select one based on their described mood or genre."
         )
