@@ -1,6 +1,6 @@
-from typing import Optional
+from typing import Optional, List
 from pydantic import BaseModel, Field
-from config.model_consts import NUMBER_OF_RECOMMENDATIONS, FEATURE_WEIGHT
+from config.model_consts import NUMBER_OF_RECOMMENDATIONS, FEATURE_WEIGHT, LLM_NUM_SEEDS
 
 class SeedInfo(BaseModel):
     track_name: str = Field(..., description="The name of the track")
@@ -16,12 +16,16 @@ class AIRecommendationParams(BaseModel):
     """
     
     # Required Fields
-    seeds: SeedInfo = Field(
+    seeds: List[SeedInfo]= Field(
         ..., 
+        min_items=1,
+        max_length=LLM_NUM_SEEDS,
         description=(
-            "Object containing 'track_name' and 'artist_name'. "
-            "Represents the seed track for recommendations. "
-            "If a track is not specified by the user, select one based on their described mood or genre."
+            f"A list of EXACTLY {LLM_NUM_SEEDS} objects containing 'track_name' and 'artist_name'. "
+            f"If the user provides fewer than {LLM_NUM_SEEDS} tracks, you MUST supplement the list "
+            f"with additional similar tracks to reach a total of {LLM_NUM_SEEDS}. "
+            f"If the user provides more than {LLM_NUM_SEEDS}, select the top {LLM_NUM_SEEDS} most relevant. "
+            f"If no tracks are specified, pick {LLM_NUM_SEEDS} tracks. Base on the described mood/genre/track requests."
         )
     )
     

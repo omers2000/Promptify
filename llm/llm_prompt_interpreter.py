@@ -11,13 +11,13 @@ class LlmPromptInterpreter:
         # Define different "personalities" for song selection
         self.selection_strategies = [
             # 1. The Hipster (Deep cuts) - 40% chance (if you list it twice, or use weights)
-            "CRITICAL: Do NOT pick the most obvious song. Dig deep for hidden gems, B-sides, or underrated tracks that match the vibe perfectly.",
+            "CRITICAL: Do NOT pick the most obvious songs. Dig deep for hidden gems, B-sides, or underrated tracks that match the vibe perfectly.",
             
             # 2. The Pop Culture Fan (Mainstream)
-            "Select the most iconic, universally recognized anthem for this specific request. Pick a song everyone knows and loves.",
+            "Select the most iconic, universally recognized anthems for this specific request. Pick songs everyone knows and loves.",
             
             # 3. The Balanced DJ (Middle ground)
-            "Select a song that is well-respected in the genre but not overplayed. Balance popularity with quality."
+            "Select songs that are well-respected in the genre but not overplayed. Balance popularity with quality."
             
             # 4. The Chaos Agent (Wildcard)
             # "Pick a song that is technically correct for the genre but might be a surprising or unconventional choice."
@@ -35,8 +35,8 @@ class LlmPromptInterpreter:
             "natural language request into specific technical audio features for a Spotify-like API.\n"
             "RULES:\n"
             "1. Analyze the user's mood, requested genre, or activity.\n"
-            "2. If NO song is mentioned, you MUST select a seed song.\n"
-            f"3. Seed song SELECTION STRATEGY: {current_strategy}\n"  # <--- Dynamic injection here
+            "2. You MUST provide seed songs.\n"
+            f"3. Seed songs SELECTION STRATEGY: {current_strategy}\n"  # <--- Dynamic injection here
             "4. Return strictly valid JSON matching the schema."
         )
 
