@@ -46,6 +46,9 @@ class UserRequests:
             self._client.playlist_add_items(playlist_id=playlist["id"], items=songs)
         return playlist
 
+    def add_track_to_playlist(self, playlist_id: str, track_id: str):
+        self._client.playlist_add_items(playlist_id=playlist_id, items=[track_id])
+
 
 class SearchRequests:
     """Search-related Spotify API requests"""
