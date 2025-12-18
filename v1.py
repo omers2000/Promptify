@@ -36,22 +36,34 @@ def main():
         ai_params_object = interpreter.interpret(playlist_description)
         params = ai_params_object.to_query_params()
         seeds = params.get("seeds")
-        print(f"Selected Seed: {seeds.get('track_name')} by {seeds.get('artist_name')}")
+        for seed in seeds:
+            print(f"Selected Seed: {seed.get('track_name')} by {seed.get('artist_name')}")
         print(f"Track recommendation params: {params}")
+
+    # seeds = {'track_name': 'September', 'artist_name': 'Earth, Wind & Fire'}
+    # params = {'seeds': seeds, 'valence': 0.8, 'popularity': 80, 'featureWeight': 5.0, 'size': 40}
 
     except Exception as e:
         print(f"An error occurred: {e}")
 
     # get recommendations
-    seed_spot_id = search_requests.get_id_by_song(seeds['track_name'], seeds['artist_name'])
-    params['seeds'] = seed_spot_id
+    seeds_string = ""
+    for seed in seeds:
+        seed_spot_id = search_requests.get_id_by_song(seed['track_name'], seed['artist_name'])
+        seeds_string += seed_spot_id + ","
+    params['seeds'] = seeds_string.rstrip(",")
     rec_track_ids = get_recommendations_ids_by_params(params)
 
     # create playlist
     playlist = user_requests.create_playlist(
         name="My New Playlist",
         songs=rec_track_ids)
+    
+    # add seeds to playlist
+    for seed_id in params['seeds'].split(","):
+        user_requests.add_track_to_playlist(playlist_id=playlist["id"], track_id=seed_id)
     print("Playlist created successfully:", playlist["external_urls"]["spotify"])
+
 
 if __name__ == "__main__":
     main()
