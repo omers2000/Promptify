@@ -20,6 +20,6 @@
 - [x] change the seed song to id method so it will work on a list of seeds - *Omer*
 - [ ] change the number of songs in the playlist: we ask RB to give us 40 songs, we need to put in the playlist only 20 songs, we need to filter the best matches from those recommendations - *Both*
 - [ ] try to find out which feature weight is better - *Both*
-- [ ] hide the user client and secter - *Omer*
-- [ ] try to find a better way to authenticate to Spotify - *Omer*
+- [x] hide the user client and secter - *Omer*
+- [x] try to find a better way to authenticate to Spotify - *Omer*
 - [x] add the seed songs to the playlist - *Omer*
