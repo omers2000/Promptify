@@ -9,3 +9,4 @@ config/__pycache__
 .cache
 
 poc.py
+.spotipy_cache*
