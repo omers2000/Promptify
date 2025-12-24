@@ -10,3 +10,4 @@ config/__pycache__
 
 poc.py
 .spotify_cache*
+.env
