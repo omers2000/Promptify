@@ -14,17 +14,22 @@ def _is_geminiKey_exist():
 def _setup_gemini():
     # print("Please enter your Google Gemini API Key:")
     # google_api_key = input().strip()
-    print("Analyzing prompt with Gemini...")
+
     # return LlmPromptInterpreter(api_key=google_api_key)
     _is_geminiKey_exist()
     return LlmPromptInterpreter(api_key=os.getenv("GEMINI_KEY"))
 
 def get_gemini_recommendations():
+    interpreter = _setup_gemini()
+
     # get playlist description from user
     print("Please enter a description for your new playlist:")
     playlist_description = input().strip()
 
-    interpreter = _setup_gemini()
+    if not playlist_description:
+        raise ValueError("Playlist description cannot be empty.")
+    
+    print("Analyzing prompt with Gemini...")
     ai_params_object = interpreter.interpret(playlist_description)
     return ai_params_object.to_query_params()
 
@@ -48,40 +53,62 @@ def main():
         print(f"\nSuccess! Connected as: {current_user['display_name']}")
         print(f"Spotify User ID: {current_user['id']}")
 
-        try:
-            params = get_gemini_recommendations()
-            seeds = params.get("seeds")
-            for seed in seeds:
-                print(f"Selected Seed: {seed.get('track_name')} by {seed.get('artist_name')}")
-            print(f"Track recommendation params: {params}")
-
-            # seeds = {'track_name': 'September', 'artist_name': 'Earth, Wind & Fire'}
-            # params = {'seeds': seeds, 'valence': 0.8, 'popularity': 80, 'featureWeight': 5.0, 'size': 40}
-
-            # get recommendations
-            seeds_string = ""
-            for seed in seeds:
-                seed_spot_id = search_requests.get_id_by_song(seed['track_name'], seed['artist_name'])
-                seeds_string += seed_spot_id + ","
-            params['seeds'] = seeds_string.rstrip(",")
-            rec_track_ids = get_recommendations_ids_by_params(params)
-
-            # create playlist
-            playlist = user_requests.create_playlist(
-                name="My New Playlist",
-                songs=rec_track_ids)
-            
-            # add seeds to playlist
-            for seed_id in params['seeds'].split(","):
-                user_requests.add_track_to_playlist(playlist_id=playlist["id"], track_id=seed_id)
-            print("Playlist created successfully:", playlist["external_urls"]["spotify"])
-
-        except Exception as e:
-            print(f"An error occurred: {e}")
-
     except Exception as e:
         print(f"\nAn error occurred: {e}")
         print("Try deleting the .cache file and running again.")
+        return
+
+    try:
+        params = get_gemini_recommendations()
+        seeds = params.get("seeds")
+
+        print(f"\nAI Suggestion Strategy: {params}")
+        print("\n--- Resolving Seeds on Spotify ---")
+
+        # get recommendations
+        valid_seed_ids = []
+        for seed in seeds:
+            track_name = seed.get('track_name')
+            artist_name = seed.get('artist_name')
+
+            seed_spot_id = search_requests.get_id_by_song(track_name, artist_name)
+
+            if seed_spot_id:
+                print(f"Found: {track_name} by {artist_name}")
+                valid_seed_ids.append(seed_spot_id)
+            else:
+                print(f"Warning: Spotify could not find '{track_name}'. Skipping.")
+
+        if not valid_seed_ids:
+            raise ValueError("Spotify could not find ANY of the seed songs suggested by Gemini.")
+
+        params['seeds'] = ",".join(valid_seed_ids)
+        
+        print(f"\nFetching recommendations based on {len(valid_seed_ids)} seeds...")
+        rec_track_ids = get_recommendations_ids_by_params(params)
+
+        if not rec_track_ids:
+            raise ValueError("Recommendation API returned no tracks (result was empty).")
+
+        # create playlist
+        playlist = user_requests.create_playlist(
+            name="My New Playlist",
+            songs=rec_track_ids)
+            
+        # add seeds to playlist
+        for seed_id in params['seeds'].split(","):
+            user_requests.add_track_to_playlist(playlist_id=playlist["id"], track_id=seed_id)
+
+        print("Playlist created successfully:", playlist["external_urls"]["spotify"])
+
+    except ValueError as ve:
+        # Logic errors (e.g. empty lists)
+        print(f"\nOperation Stopped: {ve}")
+    except Exception as e:
+        # Unexpected crashes
+        print(f"\nAn unexpected error occurred: {e}")
+    except KeyboardInterrupt:
+        print("\nProcess interrupted by user.")
 
 
 if __name__ == "__main__":

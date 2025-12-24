@@ -2,6 +2,7 @@ import random
 from data_class.recommendation_params import AIRecommendationParams
 from google import genai
 from google.genai import types
+import time
 
 class LlmPromptInterpreter:
     def __init__(self, api_key: str):
@@ -23,7 +24,7 @@ class LlmPromptInterpreter:
             # "Pick a song that is technically correct for the genre but might be a surprising or unconventional choice."
         ]
 
-    def interpret(self, user_prompt: str) -> AIRecommendationParams:
+    def interpret(self, user_prompt: str, retries: int = 3) -> AIRecommendationParams:
         
         # 1. Randomly select a strategy
         current_strategy = random.choice(self.selection_strategies)
@@ -39,25 +40,31 @@ class LlmPromptInterpreter:
             f"3. Seed songs SELECTION STRATEGY: {current_strategy}\n"  # <--- Dynamic injection here
             "4. Return strictly valid JSON matching the schema."
         )
-
-        try:
-            # 3. Slightly increase temperature for variety (0.7 to 1.2 is usually the sweet spot)
-            response = self.client.models.generate_content(
-                model=self.model_name,
-                contents=user_prompt,
-                config=types.GenerateContentConfig(
-                    system_instruction=system_instruction,
-                    response_mime_type="application/json",
-                    response_schema=AIRecommendationParams,
-                    # temperature=1.0, 
+        
+        for attempt in range(retries):
+            try:
+                # 3. Slightly increase temperature for variety (0.7 to 1.2 is usually the sweet spot)
+                response = self.client.models.generate_content(
+                    model=self.model_name,
+                    contents=user_prompt,
+                    config=types.GenerateContentConfig(
+                        system_instruction=system_instruction,
+                        response_mime_type="application/json",
+                        response_schema=AIRecommendationParams,
+                        # temperature=1.0, 
+                    )
                 )
-            )
 
-            if response.parsed:
-                return response.parsed
-            else:
-                raise ValueError("Model returned an empty response.")
+                if response.parsed:
+                    return response.parsed
 
-        except Exception as e:
-            print(f"Error interpreting prompt: {e}")
-            raise
+                print(f"Attempt {attempt + 1} failed: Model returned empty response (Check Safety Filters). Retrying...")
+
+            except Exception as e:
+                print(f"Attempt {attempt + 1} Error: {e}")
+            
+            if attempt < retries - 1:
+                time.sleep(1)
+        
+        raise ValueError("Gemini failed to generate valid JSON after multiple attempts.")
+
