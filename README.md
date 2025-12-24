@@ -16,7 +16,6 @@
 
 **TODO:**
 - [x] Handle cases where the llm makes a mistake - *Daniel*
-- [ ] change the number of songs in the playlist: we ask RB to give us 40 songs, we need to put in the playlist only 20 songs, we need to filter the best matches from those recommendations - *Both*
+- [ ] change the number of songs in the playlist: we ask RB to give us 40 songs, we need to put in the playlist only X songs, we need to filter the best matches from those recommendations - *Both*
 - [ ] try to find out which feature weight is better - *Both*
 - [ ] implement cosine similarity -  *Daniel*
-- [ ] implement song search by spotify flags (different pipeline), maybe consider async for multiple calls - *Omer*
