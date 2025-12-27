@@ -63,6 +63,7 @@ class SearchRequests:
     
     def get_id_by_song(self, song_name: str, artist_name: str) -> str:
         query = f"track:{song_name} artist:{artist_name}"
+        print(f"Searching Spotify for: {query}")
         results = self._client.search(q=query, type='track', limit=1)
         items = results.get("tracks", {}).get("items", [])
         if items:
