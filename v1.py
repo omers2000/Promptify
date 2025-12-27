@@ -91,8 +91,11 @@ def main():
             raise ValueError("Recommendation API returned no tracks (result was empty).")
 
         # create playlist
+        playlist_name = input("Enter your new Spotify playlist name: ").strip()
+        if not playlist_name:
+            playlist_name = "My New Playlist"
         playlist = user_requests.create_playlist(
-            name="My New Playlist",
+            name=playlist_name,
             songs=rec_track_ids)
             
         # add seeds to playlist
