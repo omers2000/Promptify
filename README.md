@@ -12,11 +12,13 @@
 
 **Technologies**:
 - Spotify API
-- 
+
+**Conventions:**
+- Two Data classes, each for every version
+- Same feature for both versions, later we will se if we want to add more
 
 **TODO:**
-- [x] Handle cases where the llm makes a mistake - *Daniel*
 - [ ] change the number of songs in the playlist: we ask RB to give us 40 songs, we need to put in the playlist only X songs, we need to filter the best matches from those recommendations - *Both*
 - [ ] try to find out which feature weight is better - *Both*
 - [ ] implement cosine similarity -  *Daniel*
-- [ ] name playlist
+- [ ] implement v2.py - *Omer* (Prompt from user - Gemini - get songs from DB - cosine - create playlist)
