@@ -11,3 +11,17 @@ config/__pycache__
 poc.py
 .spotify_cache*
 .env
+
+# Local Data Files
+dataset.csv
+
+# Partner's files (Do not touch)
+songs_data.npy
+songs_meta.csv
+
+# My Engine Files (New)
+tracks_features.npy
+tracks_meta.csv
+
+.DS_Store
+**/.DS_Store
