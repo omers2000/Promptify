@@ -9,7 +9,13 @@ class LlmPromptInterpreter:
 
     _BASE_SYSTEM_INSTRUCTION = (
         "You are a music recommendation assistant. Your job is to translate a user's "
-        "natural language request into specific technical audio features for a Spotify-like API.\n"
+        "natural language request into specific technical audio features.\n"
+        "CORE CONCEPTS:\n"
+        "1. **Audio Features**: acousticness, danceability, energy, tempo, valence, popularity.\n"
+        "2. **Weights (0.0 to 1.0)**: You must assign a weight to each feature to indicate its importance:\n"
+        "   - 1.0 = Critical constraint (Must match very well).\n"
+        "   - 0.5 = Moderate preference.\n"
+        "   - 0.0 = Irrelevant (Do not filter by this).\n"
         "RULES:\n"
         "1. Analyze the user's mood, requested genre, or activity.\n"
     )
@@ -40,13 +46,14 @@ class LlmPromptInterpreter:
                 f"{self._BASE_SYSTEM_INSTRUCTION}"
                 "2. You MUST provide seed songs.\n"
                 f"3. Seed songs SELECTION STRATEGY: {current_strategy}\n"
-                "4. Return strictly valid JSON matching the schema."
+                "4. **Feature Weights**: Even though this is an external API, provide weights so we can re-rank the results accurately locally.\n"
+                "5. Return strictly valid JSON matching the schema."
            )
             
         elif response_model == LocalSearchParams:
-            system_instruction = (
+           system_instruction = (
                 f"{self._BASE_SYSTEM_INSTRUCTION}"
-                "2. Rank the importance of features (weights) based on the user's emphasis.\n"
+                "2. Rank the importance of features (weights) based on the user's emphasis for the Vector Search.\n"
                 "3. Return strictly valid JSON matching the schema."
             )
 
