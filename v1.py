@@ -2,6 +2,7 @@ import os
 from spotify.auth import Auth
 from spotify.spotify_requests import UserRequests, SearchRequests
 from rb.rb_functions import get_recommendations_ids_by_params
+from data_class.recommendation_params import ReccoBeatsParams
 from llm.llm_prompt_interpreter import LlmPromptInterpreter
 from dotenv import load_dotenv
 
@@ -30,7 +31,10 @@ def get_gemini_recommendations():
         raise ValueError("Playlist description cannot be empty.")
     
     print("Analyzing prompt with Gemini...")
-    ai_params_object = interpreter.interpret(playlist_description)
+    ai_params_object = interpreter.interpret(
+        user_prompt=playlist_description, 
+        response_model=ReccoBeatsParams
+    )
     return ai_params_object.to_query_params()
 
 

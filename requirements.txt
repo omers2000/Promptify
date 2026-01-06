@@ -19,6 +19,7 @@ httplib2==0.31.0
 httpx==0.28.1
 idna==3.11
 iniconfig==2.3.0
+joblib==1.5.3
 numpy==2.4.0
 packaging==25.0
 pandas==2.3.3
@@ -38,9 +39,12 @@ pytz==2025.2
 redis==7.1.0
 requests==2.32.5
 rsa==4.9.1
+scikit-learn==1.8.0
+scipy==1.16.3
 six==1.17.0
 spotipy==2.25.2
 tenacity==9.1.2
+threadpoolctl==3.6.0
 tqdm==4.67.1
 typing-inspection==0.4.2
 typing_extensions==4.15.0

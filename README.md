@@ -20,5 +20,6 @@
 **TODO:**
 - [ ] change the number of songs in the playlist: we ask RB to give us 40 songs, we need to put in the playlist only X songs, we need to filter the best matches from those recommendations - *Both*
 - [ ] try to find out which feature weight is better - *Both*
-- [ ] implement cosine similarity -  *Daniel*
 - [ ] implement v2.py - *Omer* (Prompt from user - Gemini - get songs from DB - cosine - create playlist)
+- [ ] integrate config/model_consts.py: DEFAULT_PLAYLIST_LENGTH = 20 to your parts of the code - *Omer*
+- [ ] merge feature/search-logic when you aprove - *Omer*
