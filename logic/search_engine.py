@@ -39,7 +39,7 @@ class SearchEngine:
             return 0.0
             
         if feature_name == 'tempo':
-            return min(float(value) / 250.0, 1.0)
+            return min(max(float(value), 0.0) / 250.0, 1.0)
         elif feature_name == 'popularity':
             return float(value) / 100.0
         
