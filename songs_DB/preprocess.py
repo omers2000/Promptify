@@ -13,12 +13,9 @@ from config.model_consts import FEATURE_ORDER # CRITICAL: This order must match 
 # CONFIGURATION
 # ==========================================
 
-# The source file from Kaggle
-INPUT_FILE = 'dataset.csv'
-
-# Output files
-OUTPUT_NPY = 'tracks_features.npy'  # Numerical matrix for the algorithm
-OUTPUT_META = 'tracks_meta.csv'     # Metadata to display to the user
+INPUT_FILE = os.path.join(current_dir, 'dataset.csv')
+OUTPUT_NPY = os.path.join(current_dir, 'tracks_features.npy')
+OUTPUT_META = os.path.join(current_dir, 'tracks_meta.csv')
 
 def normalize_column(df, col_name):
     if col_name == 'tempo':
