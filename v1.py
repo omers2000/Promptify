@@ -1,9 +1,12 @@
 import os
+from typing import List, Dict
 from spotify.auth import Auth
 from spotify.spotify_requests import UserRequests, SearchRequests
-from rb.rb_functions import get_recommendations_ids_by_params
+from rb.rb_functions import get_recommendations_ids_by_params, get_audio_features
 from data_class.recommendation_params import ReccoBeatsParams
 from llm.llm_prompt_interpreter import LlmPromptInterpreter
+from config.model_consts import DEFAULT_PLAYLIST_LENGTH
+from logic.search_engine import SearchEngine
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -13,10 +16,6 @@ def _is_geminiKey_exist():
         raise Exception("Google Gemini API Key not found in environment variables.")
     
 def _setup_gemini():
-    # print("Please enter your Google Gemini API Key:")
-    # google_api_key = input().strip()
-
-    # return LlmPromptInterpreter(api_key=google_api_key)
     _is_geminiKey_exist()
     return LlmPromptInterpreter(api_key=os.getenv("GEMINI_KEY"))
 
@@ -31,12 +30,20 @@ def get_gemini_recommendations():
         raise ValueError("Playlist description cannot be empty.")
     
     print("Analyzing prompt with Gemini...")
-    ai_params_object = interpreter.interpret(
+    return interpreter.interpret(
         user_prompt=playlist_description, 
         response_model=ReccoBeatsParams
     )
-    return ai_params_object.to_query_params()
 
+def get_top_songs(ai_params_object, rec_track_ids: List[Dict], top_n: int) -> list:
+    """Returns the top N track IDs from the recommendation results."""
+    top_songs = []
+    target_vector, weights_vector = ai_params_object.get_search_data()
+    candidates_list = [get_audio_features(item) for item in rec_track_ids]
+    sorted_songs = SearchEngine.rank_reccobeats_candidates(candidates_list, target_vector, weights_vector)
+    for song in sorted_songs[:top_n]:
+        top_songs.append(song["spot_id"])
+    return top_songs
 
 def main():
     print("=== Spotipy ===")
@@ -63,7 +70,8 @@ def main():
         return
 
     try:
-        params = get_gemini_recommendations()
+        ai_params_object = get_gemini_recommendations()
+        params = ai_params_object.to_query_params()
         seeds = params.get("seeds")
 
         print(f"\nAI Suggestion Strategy: {params}")
@@ -93,6 +101,8 @@ def main():
 
         if not rec_track_ids:
             raise ValueError("Recommendation API returned no tracks (result was empty).")
+        
+        top_rec_ids = get_top_songs(ai_params_object, rec_track_ids, top_n=DEFAULT_PLAYLIST_LENGTH)
 
         # create playlist
         playlist_name = input("Enter your new Spotify playlist name: ").strip()
@@ -100,7 +110,7 @@ def main():
             playlist_name = "My New Playlist"
         playlist = user_requests.create_playlist(
             name=playlist_name,
-            songs=rec_track_ids)
+            songs=top_rec_ids)
             
         # add seeds to playlist
         for seed_id in params['seeds'].split(","):
