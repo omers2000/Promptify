@@ -64,9 +64,7 @@ def main():
         return
     
     try:
-        params = get_gemini_recommendations() ## until here fixed for v2
-        targets = params[0]
-        weights = params[1]
+        targets, weights = get_gemini_recommendations()
 
         search_engine = SearchEngine()
         db_recommendations = search_engine.search_db(targets, weights)
