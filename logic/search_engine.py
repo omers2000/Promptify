@@ -24,7 +24,9 @@ class SearchEngine:
             raise FileNotFoundError(f"Database file not found: {self.db_path}. Please run preprocess.py first.")
 
         print("Loading Unified Parquet Database...")
-        full_df = pd.read_parquet(self.db_path)
+        meta_cols = ['track_id', 'track_name', 'artists']
+        required_cols = meta_cols + FEATURE_ORDER
+        full_df = pd.read_parquet(self.db_path, columns=required_cols)
         
         missing_features = [f for f in FEATURE_ORDER if f not in full_df.columns]
         if missing_features:
@@ -37,7 +39,7 @@ class SearchEngine:
         self.features_matrix = full_df[FEATURE_ORDER].to_numpy(dtype=np.float32)
     
         # Metadata for display
-        self.metadata_df = full_df[['track_id', 'track_name', 'artists']]
+        self.metadata_df = full_df[meta_cols].copy()
     
         self._is_loaded = True
         print(f"Database Loaded: {self.features_matrix.shape[0]} songs ready.")
