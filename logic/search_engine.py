@@ -37,11 +37,13 @@ class SearchEngine:
     def _normalize_value(feature_name: str, value: float) -> float:
         if value is None:
             return 0.0
+        
+        non_negative_value = max(float(value), 0.0)
             
         if feature_name == 'tempo':
-            return min(max(float(value), 0.0) / 250.0, 1.0)
+            return min(non_negative_value / 250.0, 1.0)
         elif feature_name == 'popularity':
-            return float(value) / 100.0
+            return min(non_negative_value / 100.0, 1.0)
         
         return float(value)
     
