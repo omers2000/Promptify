@@ -24,7 +24,7 @@ class SearchEngine:
             raise FileNotFoundError(f"Database files not found in songs_DB/. Please run preprocess.py first.")
 
         print("Loading Local Database into Memory...")
-        self.features_matrix = np.load(self.features_path)
+        self.features_matrix = np.load(self.features_path).astype(np.float32)
         self.metadata_df = pd.read_csv(self.meta_path)
         self._is_loaded = True
         print(f"Database Loaded: {self.features_matrix.shape[0]} songs ready.")
@@ -55,8 +55,8 @@ class SearchEngine:
         Returns: A 1D array of scores (Lower score = Better match).
         """
 
-        target_arr = np.array(target_vector)   
-        weights_arr = np.array(weights_vector) 
+        target_arr = np.array(target_vector, dtype=np.float32)   
+        weights_arr = np.array(weights_vector, dtype=np.float32) 
 
         diff = candidates_matrix - target_arr
         squared_diff = diff ** 2
@@ -94,7 +94,7 @@ class SearchEngine:
                 row.append(norm_val)
             candidates_matrix.append(row)
             
-        candidates_matrix = np.array(candidates_matrix)
+        candidates_matrix = np.array(candidates_matrix, dtype=np.float32)
         scores = SearchEngine._calculate_weighted_distance(candidates_matrix, norm_target, local_weights)
 
         ranked_results = []
