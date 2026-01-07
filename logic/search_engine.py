@@ -140,6 +140,12 @@ class SearchEngine:
         Returns:
             A list of the top N closest matches from the local CSV/NPY database,
             including metadata (ID, name, artists) and their calculated distance scores.
+            
+        Raises:
+            FileNotFoundError: If the .npy or .csv database files are missing from the disk.
+            ValueError: If the database files are out of sync (row count mismatch) or if 
+                        input vector lengths do not match FEATURE_ORDER.
+            OSError: If database files exist but cannot be read due to permissions or corruption.
         """
         if not self._is_loaded:
             self.load_data()
