@@ -45,7 +45,7 @@ class SearchEngine:
         elif feature_name == 'popularity':
             return min(non_negative_value / 100.0, 1.0)
         
-        return float(value)
+        return min(non_negative_value, 1.0)
     
     @staticmethod
     def _calculate_weighted_distance(candidates_matrix: np.ndarray, target_vector: List[float], weights_vector: List[float]) -> np.ndarray:
