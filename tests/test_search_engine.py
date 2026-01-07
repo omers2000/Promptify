@@ -15,7 +15,7 @@ from config.model_consts import FEATURE_ORDER
 
 class TestPipeline1_ExternalRanking(unittest.TestCase):
     """
-    Tests for Pipeline 1: 'rank_external_candidates'.
+    Tests for Pipeline 1: 'rank_reccobeats_candidates'.
     This method is static and Re-Ranks a small list of results from an API.
     """
 
@@ -29,7 +29,7 @@ class TestPipeline1_ExternalRanking(unittest.TestCase):
         Edge Case: If the API returns no songs, the function should return an empty list
         without crashing.
         """
-        result = SearchEngine.rank_external_candidates([], [0.5]*6, [1.0]*6)
+        result = SearchEngine.rank_reccobeats_candidates([], [0.5]*6, [1.0]*6)
         self.assertEqual(result, [])
 
     def test_perfect_match_score(self):
@@ -47,7 +47,7 @@ class TestPipeline1_ExternalRanking(unittest.TestCase):
             'tempo': 125, 'valence': 0.5, 'popularity': 50
         }
 
-        results = SearchEngine.rank_external_candidates([candidate], target_vector, weights_vector)
+        results = SearchEngine.rank_reccobeats_candidates([candidate], target_vector, weights_vector)
         
         # Score should be effectively 0
         self.assertAlmostEqual(results[0]['match_score_squared'], 0.0, places=5)
@@ -64,7 +64,7 @@ class TestPipeline1_ExternalRanking(unittest.TestCase):
 
         candidate = {'id': 'fast', 'tempo': 250, 'acousticness': 0} 
 
-        results = SearchEngine.rank_external_candidates([candidate], target_vector, weights)
+        results = SearchEngine.rank_reccobeats_candidates([candidate], target_vector, weights)
         self.assertAlmostEqual(results[0]['match_score_squared'], 0.0, places=5)
 
     def test_popularity_is_ignored_in_pipeline1(self):
@@ -80,7 +80,7 @@ class TestPipeline1_ExternalRanking(unittest.TestCase):
         # Candidate has NO popularity field (defaults to 0 internally)
         candidate = {'id': 'A', 'tempo': 100} 
 
-        results = SearchEngine.rank_external_candidates([candidate], target_vector, weights_vector)
+        results = SearchEngine.rank_reccobeats_candidates([candidate], target_vector, weights_vector)
         
         # If popularity weight was active: (0 - 1.0)^2 * 10 = 10.0 score.
         # If popularity weight was forced to 0: Score should be 0.0.
@@ -99,7 +99,7 @@ class TestPipeline1_ExternalRanking(unittest.TestCase):
         cand_b = {'id': 'bad', 'acousticness': 0.5, 'tempo': 0, 'popularity': 50, 'energy': 0.5, 'danceability': 0.5, 'valence': 0.5}
 
         # Pass in wrong order
-        results = SearchEngine.rank_external_candidates([cand_b, cand_a], target, weights)
+        results = SearchEngine.rank_reccobeats_candidates([cand_b, cand_a], target, weights)
 
         # Check if sorted correctly
         self.assertEqual(results[0]['id'], 'perfect')
@@ -108,7 +108,7 @@ class TestPipeline1_ExternalRanking(unittest.TestCase):
 
 class TestPipeline2_LocalSearch(unittest.TestCase):
     """
-    Tests for Pipeline 2: 'search_local'.
+    Tests for Pipeline 2: 'search_db'.
     This involves searching a large database using vectorized operations.
     We mock the database here to avoid loading the real 200MB file.
     """
@@ -151,7 +151,7 @@ class TestPipeline2_LocalSearch(unittest.TestCase):
         target_vector = [0, 0, 1.0, 250, 0, 0] 
         weights =       [0, 0, 1.0, 1.0, 0, 0] # Only care about Energy & Tempo
 
-        results = self.engine.search_local(target_vector, weights, top_n=1)
+        results = self.engine.search_db(target_vector, weights, top_n=1)
         
         self.assertEqual(results[0]['track_name'], 'Party Song')
         self.assertAlmostEqual(results[0]['score_squared'], 0.0, places=5)
@@ -167,7 +167,7 @@ class TestPipeline2_LocalSearch(unittest.TestCase):
         target_vector = [0.5, 0.5, 0.5, 125, 0.5, 50] 
         weights = [1, 1, 1, 1, 1, 1]
 
-        results = self.engine.search_local(target_vector, weights, top_n=1)
+        results = self.engine.search_db(target_vector, weights, top_n=1)
 
         self.assertEqual(results[0]['track_name'], 'Mid Song')
         # If normalization was missed, |125 - 0.5|^2 is huge. 
@@ -181,8 +181,8 @@ class TestPipeline2_LocalSearch(unittest.TestCase):
         """
         target = [0.5]*6
         weights = [1]*6
-        
-        results = self.engine.search_local(target, weights, top_n=10)
+
+        results = self.engine.search_db(target, weights, top_n=10)
         self.assertEqual(len(results), 3)
 
     def test_zero_weights(self):
@@ -192,9 +192,9 @@ class TestPipeline2_LocalSearch(unittest.TestCase):
         """
         target = [0.0]*6
         weights = [0.0]*6 # User cares about nothing
-        
-        results = self.engine.search_local(target, weights, top_n=3)
-        
+
+        results = self.engine.search_db(target, weights, top_n=3)
+
         for res in results:
             self.assertAlmostEqual(res['score_squared'], 0.0, places=5)
 

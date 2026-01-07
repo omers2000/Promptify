@@ -1,16 +1,16 @@
 import pandas as pd
 import numpy as np
 import os
-from typing import List, Dict, Any
+from typing import List, Dict
 from config.model_consts import FEATURE_ORDER, DEFAULT_PLAYLIST_LENGTH
 
 class SearchEngine:
     def __init__(self):
         current_dir = os.path.dirname(os.path.abspath(__file__))
-        project_root = os.path.dirname(current_dir)
+        self.project_root = os.path.dirname(current_dir)
 
-        self.features_path = os.path.join(project_root, 'songs_DB', 'tracks_features.npy')
-        self.meta_path = os.path.join(project_root, 'songs_DB', 'tracks_meta.csv')
+        # The only path we need now
+        self.db_path = os.path.join(self.project_root, 'songs_DB', 'tracks_db.parquet')
 
         self.features_matrix = None
         self.metadata_df = None
@@ -20,21 +20,25 @@ class SearchEngine:
         if self._is_loaded:
             return
 
-        if not os.path.exists(self.features_path) or not os.path.exists(self.meta_path):
-            raise FileNotFoundError(f"Database files not found in songs_DB/. Please run preprocess.py first.")
+        if not os.path.exists(self.db_path):
+            raise FileNotFoundError(f"Database file not found: {self.db_path}. Please run preprocess.py first.")
 
-        print("Loading Local Database into Memory...")
-        self.features_matrix = np.load(self.features_path).astype(np.float32)
-        self.metadata_df = pd.read_csv(self.meta_path)
-
-        if self.features_matrix.shape[0] != len(self.metadata_df):
-            raise ValueError(
-                f"CRITICAL SYNC ERROR: Database files do not match. "
-                f"Features has {self.features_matrix.shape[0]} rows, "
-                f"but Metadata has {len(self.metadata_df)} rows. "
-                "Please delete files in songs_DB and run preprocess.py again."
-            )
+        print("Loading Unified Parquet Database...")
+        full_df = pd.read_parquet(self.db_path)
         
+        missing_features = [f for f in FEATURE_ORDER if f not in full_df.columns]
+        if missing_features:
+            raise ValueError(
+                f"Database out of sync! Missing features: {missing_features}. "
+                "Please run preprocess.py to rebuild the database."
+            )
+
+        # Feature matrix for calculations
+        self.features_matrix = full_df[FEATURE_ORDER].to_numpy(dtype=np.float32)
+    
+        # Metadata for display
+        self.metadata_df = full_df[['track_id', 'track_name', 'artists']]
+    
         self._is_loaded = True
         print(f"Database Loaded: {self.features_matrix.shape[0]} songs ready.")
 
@@ -70,27 +74,27 @@ class SearchEngine:
 
 
     @staticmethod
-    def rank_reccobeats_candidates(candidates_list: List[Dict[str, Any]], target_vector: List[float], weights_vector: List[float]) -> List[Dict[str, Any]]:
+    def rank_reccobeats_candidates(candidates_list: List[Dict], target_vector: List[float], weights_vector: List[float]) -> List[Dict]:
         """
         Ranks tracks from ReccoBeats based on feature similarity.
         
         Args:
-            candidates_list: List of track dictionaries containing metadata and raw audio features.
-            target_vector: The desired audio feature values to match against.
-            weights_vector: Importance multipliers for each feature (0.0 to 1.0).
+            candidates_list: List of track dictionaries containing metadata and raw audio features (from ReccoBeats).
+            target_vector: The desired audio feature values to match against (from gemini/ReccoBeatsParams).
+            weights_vector: Importance multipliers for each feature (0.0 to 1.0) (from gemini/ReccoBeatsParams).
             
         Returns:
             A list of track dictionaries, sorted by 'match_score_squared' (lowest is best),
-            with the popularity weight forced to 0.0 as external APIs often lack this real-time data.
+            with the popularity weight forced to 0.0 as ReccoBeats lacks this data.
         """
         if not candidates_list:
             return []
         
         # --- 1. Handle Weights (Ignore Popularity for External API) ---
-        local_weights = np.array(weights_vector, dtype=np.float32)
+        weights_arr = np.array(weights_vector, dtype=np.float32)
         try:
             pop_idx = FEATURE_ORDER.index('popularity')
-            local_weights[pop_idx] = 0.0 # Force weight to 0 since API lacks this data
+            weights_arr[pop_idx] = 0.0 # Force weight to 0 since API lacks this data
         except ValueError:
             pass
 
@@ -112,7 +116,7 @@ class SearchEngine:
             candidates_matrix.append(row)
             
         candidates_matrix = np.array(candidates_matrix, dtype=np.float32)
-        scores = SearchEngine._calculate_weighted_distance(candidates_matrix, target_arr, local_weights)
+        scores = SearchEngine._calculate_weighted_distance(candidates_matrix, target_arr, weights_arr)
 
         ranked_results = []
         for i, track in enumerate(candidates_list):
@@ -133,22 +137,34 @@ class SearchEngine:
         Searches the pre-processed local database for the most similar tracks.
         
         Args:
-            target_vector: The normalized audio feature values to search for.
-            weights_vector: Feature importance weights.
+            target_vector: The normalized audio feature values to search for (from gemini/ReccoBeatsParams).
+            weights_vector: Feature importance weights (from gemini/ReccoBeatsParams).
             top_n: Number of results to return (defults to DEFAULT_PLAYLIST_LENGTH if no value is given).
             
         Returns:
-            A list of the top N closest matches from the local CSV/NPY database,
+            A list of the top N closest matches from the local database,
             including metadata (ID, name, artists) and their calculated distance scores.
             
         Raises:
-            FileNotFoundError: If the .npy or .csv database files are missing from the disk.
-            ValueError: If the database files are out of sync (row count mismatch) or if 
-                        input vector lengths do not match FEATURE_ORDER.
-            OSError: If database files exist but cannot be read due to permissions or corruption.
+            FileNotFoundError: 
+                If 'tracks_db.parquet' is missing. Occurs if preprocess.py was not run 
+                or the database was moved.
+            ValueError: 
+                1. Feature Mismatch: If the Parquet file lacks columns defined in FEATURE_ORDER.
+                2. Input Length Mismatch: If target_vector or weights_vector length 
+                   does not exactly match len(FEATURE_ORDER).
+            OSError: 
+                If the Parquet file is corrupted, unreadable, or locked by another process.
         """
         if not self._is_loaded:
             self.load_data()
+        
+        expected_len = len(FEATURE_ORDER)
+        if len(target_vector) != expected_len or len(weights_vector) != expected_len:
+            raise ValueError(
+                f"Input vector length mismatch. Expected {expected_len} features, "
+                f"but got target({len(target_vector)}) and weights({len(weights_vector)})."
+            )
 
         norm_target = [
             SearchEngine._normalize_value(f, val) 
@@ -168,6 +184,7 @@ class SearchEngine:
 
         results = []
         for idx in top_indices_sorted:
+            # Since they came from the same Parquet file, idx is guaranteed to match
             row = self.metadata_df.iloc[idx]
             results.append({
                 'track_id': row['track_id'],

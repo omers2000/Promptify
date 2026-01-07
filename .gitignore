@@ -23,5 +23,7 @@ songs_meta.csv
 tracks_features.npy
 tracks_meta.csv
 
+tracks_db.parquet
+
 .DS_Store
 **/.DS_Store
