@@ -1,5 +1,4 @@
 import os
-from typing import List, Dict
 from spotify.auth import Auth
 from spotify.spotify_requests import UserRequests, SearchRequests
 from rb.rb_functions import get_recommendations_ids_by_params, get_audio_features
@@ -35,11 +34,11 @@ def get_gemini_recommendations():
         response_model=ReccoBeatsParams
     )
 
-def get_top_songs(ai_params_object, rec_track_ids: List[Dict], top_n: int) -> list:
+def get_top_songs(ai_params_object, rec_track_ids: list, top_n: int) -> list:
     """Returns the top N track IDs from the recommendation results."""
     top_songs = []
     target_vector, weights_vector = ai_params_object.get_search_data()
-    candidates_list = [get_audio_features(item) for item in rec_track_ids]
+    candidates_list = get_audio_features(rec_track_ids)
     sorted_songs = SearchEngine.rank_reccobeats_candidates(candidates_list, target_vector, weights_vector)
     for song in sorted_songs[:top_n]:
         top_songs.append(song["spot_id"])
