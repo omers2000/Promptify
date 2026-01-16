@@ -61,21 +61,34 @@ def init_session_state():
 def get_gsheet_client():
     """Get authenticated Google Sheets client."""
     try:
-        # 1. Production: Check Streamlit Cloud Secrets first
-        if "gcp_service_account" in st.secrets:
-            creds_dict = dict(st.secrets["gcp_service_account"])
+        creds = None
+        
+        # Option 1: Streamlit Cloud secrets (wrapped safely)
+        try:
+            if hasattr(st, 'secrets') and "gcp_service_account" in st.secrets:
+                creds_dict = dict(st.secrets["gcp_service_account"])
+                creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
+        except Exception:
+            pass  # No secrets file, continue to other options
+        
+        # Option 2: Environment variable (JSON string)
+        if creds is None and os.getenv("GOOGLE_CREDENTIALS"):
+            creds_json = os.getenv("GOOGLE_CREDENTIALS")
+            creds_dict = json.loads(creds_json)
             creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
         
-        # 2. Development: Fallback to local file (for when you run on laptop)
-        elif os.path.exists(CREDENTIALS_PATH):
+        # Option 3: Local credentials file
+        if creds is None and os.path.exists(CREDENTIALS_PATH):
             creds = Credentials.from_service_account_file(CREDENTIALS_PATH, scopes=SCOPES)
         
-        else:
-            st.error("❌ Google Sheets credentials not found in Secrets or local file.")
+        if creds is None:
+            st.error(f"❌ Google Sheets credentials not found at: {CREDENTIALS_PATH}")
             return None
         
         return gspread.authorize(creds)
-
+    except json.JSONDecodeError as e:
+        st.error(f"❌ Invalid JSON in GOOGLE_CREDENTIALS: {str(e)}")
+        return None
     except Exception as e:
         st.error(f"❌ Failed to connect to Google Sheets: {str(e)}")
         return None
@@ -92,8 +105,8 @@ def save_vote_to_sheet(vote_type):
         # Safe retrieval of list lengths
         v1_len = len(st.session_state.v1_results["track_ids"]) if st.session_state.v1_results else 0
         v2_len = len(st.session_state.v2_results["track_ids"]) if st.session_state.v2_results else 0
-        v1_str = ";".join(st.session_state.v1_results["track_ids"]) if st.session_state.v1_results else ""
-        v2_str = ";".join(st.session_state.v2_results["track_ids"]) if st.session_state.v2_results else ""
+        # v1_str = ";".join(st.session_state.v1_results["track_ids"]) if st.session_state.v1_results else ""
+        # v2_str = ";".join(st.session_state.v2_results["track_ids"]) if st.session_state.v2_results else ""
 
         row = [
             datetime.now().isoformat(),
@@ -101,8 +114,8 @@ def save_vote_to_sheet(vote_type):
             vote_type,
             v1_len,
             v2_len,
-            v1_str,
-            v2_str
+            # v1_str,
+            # v2_str
         ]
         sheet.append_row(row)
         
