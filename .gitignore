@@ -11,6 +11,7 @@ config/__pycache__
 poc.py
 .spotify_cache*
 .env
+credentials.json
 
 # Local Data Files
 dataset.csv
@@ -22,8 +23,6 @@ songs_meta.csv
 # My Engine Files (New)
 tracks_features.npy
 tracks_meta.csv
-
-tracks_db.parquet
 
 .DS_Store
 **/.DS_Store
