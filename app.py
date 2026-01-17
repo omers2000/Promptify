@@ -40,6 +40,7 @@ def init_session_state():
         "spotify_auth": None,
         "current_prompt": "",
         "show_results": False,
+        "is_generating": False,
         "v1_results": None,
         "v2_results": None,
         "v1_error": None,
@@ -210,16 +211,25 @@ def render_input_area():
     )
     # Update state immediately when user types
     st.session_state.current_prompt = prompt
-
-    is_authed = st.session_state.spotify_auth is not None
     
     col1, col2, col3 = st.columns([1, 1, 1])
     with col2:
-        if st.button("🎲 Generate", type="primary", use_container_width=True, disabled=not (is_authed and prompt)):
-            run_generation_logic()
+        if st.button("🎲 Generate", type="primary", use_container_width=True):
+            # Validate on click instead of disabled prop
+            if not st.session_state.spotify_auth:
+                st.error("⚠️ Please login to Spotify first")
+            elif not st.session_state.current_prompt.strip():
+                st.error("⚠️ Please enter a playlist description")
+            else:
+                run_generation_logic()
 
 def run_generation_logic():
     """Runs the pipelines and updates state."""
+    # Prevent double execution from st.rerun()
+    if st.session_state.is_generating:
+        return
+    st.session_state.is_generating = True
+    
     auth = st.session_state.spotify_auth
     prompt = st.session_state.current_prompt
     
@@ -255,6 +265,7 @@ def run_generation_logic():
 
     # 4. Show results
     st.session_state.show_results = True
+    st.session_state.is_generating = False
     st.rerun()
 
 def render_results():
