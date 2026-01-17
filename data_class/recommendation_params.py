@@ -1,6 +1,6 @@
 from typing import Optional, List, Dict, Any, Tuple
 from pydantic import BaseModel, Field
-from config.model_consts import NUMBER_OF_RECOMMENDATIONS, FEATURE_WEIGHT, LLM_NUM_SEEDS, FEATURE_ORDER
+from config.model_consts import NUMBER_OF_RECOMMENDATIONS, FEATURE_WEIGHT, LLM_NUM_SEEDS, FEATURE_ORDER, MIN_POPULARITY
 
 # ==========================================
 # 1. Building Block: SEEDS (Only for Pipeline 1)
@@ -55,8 +55,11 @@ class AudioFeatures(BaseModel):
     )
     
     popularity: Optional[int] = Field(
-        None, ge=0, le=100, 
-        description="Track popularity (0-100)."
+        None, ge=MIN_POPULARITY, le=100, 
+        description=(
+            f"Track popularity. The scale is 0-100 (0 = least popular, 100 = most popular), "
+            f"but you MUST output a value between {MIN_POPULARITY} and 100."            
+        )
     )
 
 
