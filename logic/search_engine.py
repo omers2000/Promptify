@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 import os
 from typing import List, Dict
-from config.model_consts import FEATURE_ORDER, DEFAULT_PLAYLIST_LENGTH
+from config.model_consts import FEATURE_ORDER, DEFAULT_PLAYLIST_LENGTH, MIN_POPULARITY
 
 class SearchEngine:
     def __init__(self):
@@ -34,6 +34,10 @@ class SearchEngine:
                 f"Database out of sync! Missing features: {missing_features}. "
                 "Please run preprocess.py to rebuild the database."
             )
+
+        # Filter by minimum popularity
+        min_pop_normalized = MIN_POPULARITY / 100.0
+        full_df = full_df[full_df['popularity'] >= min_pop_normalized].reset_index(drop=True)
 
         # Feature matrix for calculations
         self.features_matrix = full_df[FEATURE_ORDER].to_numpy(dtype=np.float32)
