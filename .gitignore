@@ -14,11 +14,11 @@ poc.py
 credentials.json
 
 # Local Data Files
-dataset.csv
+songs_DB/dataset.csv
 
 # Partner's files (Do not touch)
-songs_data.npy
-songs_meta.csv
+songs_DB/songs_data.npy
+songs_DB/songs_meta.csv
 
 # My Engine Files (New)
 tracks_features.npy
