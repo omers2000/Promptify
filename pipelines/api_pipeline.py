@@ -5,7 +5,7 @@ Extracted from v1.py for use in the Streamlit app.
 
 from data_class.recommendation_params import ReccoBeatsParams
 from rb.rb_functions import get_recommendations_ids_by_params, get_audio_features
-from logic.search_engine import SearchEngine
+from pipelines.search_engine import SearchEngine
 from config.model_consts import DEFAULT_PLAYLIST_LENGTH
 from pipelines.shared import get_gemini_interpretation
 

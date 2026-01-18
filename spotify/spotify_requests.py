@@ -2,26 +2,6 @@ import spotipy
 from typing import List
 from dataclasses import dataclass
 
-
-# @dataclass
-# class Track:
-#     """Data structure for track information"""
-#     name: str
-#     id: str
-#     artists: List[dict]  # List of {name, id}
-    
-#     def __str__(self) -> str:
-#         artists_str = ", ".join([f"{artist['name']} ({artist['id']})" for artist in self.artists])
-#         return f"Track: {self.name} (ID: {self.id})\nArtists: {artists_str}"
-    
-#     def to_dict(self) -> dict:
-#         return {
-#             "name": self.name,
-#             "id": self.id,
-#             "artists": self.artists
-#         }
-
-
 class UserRequests:
     """User-related Spotify API requests
 
@@ -69,15 +49,3 @@ class SearchRequests:
         if items:
             return items[0]["id"]
         return ""
-    
-    # def parse_tracks(self, search_results: dict) -> List[Track]:
-    #     """Parse search results into Track objects"""
-    #     tracks = []
-    #     for item in search_results.get("tracks", {}).get("items", []):
-    #         track = Track(
-    #             name=item.get("name"),
-    #             id=item.get("id"),
-    #             artists=[{"name": artist["name"], "id": artist["id"]} for artist in item.get("artists", [])]
-    #         )
-    #         tracks.append(track)
-    #     return tracks

@@ -4,12 +4,8 @@ Compares two recommendation pipelines: API-based (V1) vs Database-based (V2)
 """
 
 import os
-import json
 from datetime import datetime
 import streamlit as st
-import spotipy
-from spotipy.oauth2 import SpotifyOAuth
-from spotipy.cache_handler import MemoryCacheHandler
 from dotenv import load_dotenv
 import gspread
 from google.oauth2.service_account import Credentials
@@ -18,6 +14,7 @@ from google.oauth2.service_account import Credentials
 from spotify.spotify_requests import UserRequests, SearchRequests
 from config.spotify_consts import SCOPE
 from pipelines import run_pipeline_v1, run_pipeline_v2
+from spotify.auth import Auth
 
 load_dotenv()
 
@@ -76,22 +73,20 @@ def get_auth_manager():
         st.error("❌ Missing REDIRECT_URI. Please add it to Streamlit Secrets.")
         st.stop()
 
-    return SpotifyOAuth(
+    return Auth(
         client_id=client_id,
         client_secret=client_secret,
         redirect_uri=redirect_uri,
-        scope=SCOPE,
-        cache_handler=MemoryCacheHandler(), # Essential for Cloud persistence
-        show_dialog=True
+        scope=SCOPE
     )
-
+    
 def get_spotify_client():
     """Returns an authenticated Spotify client if valid."""
     if not st.session_state.token_info:
         return None
     
     token_info = st.session_state.token_info
-    auth_manager = get_auth_manager()
+    auth_manager = get_auth_manager().auth_manager
     
     # Auto-refresh logic
     if auth_manager.is_token_expired(token_info):
@@ -101,7 +96,7 @@ def get_spotify_client():
         except Exception:
             return None 
 
-    spotify = spotipy.Spotify(auth=token_info["access_token"])
+    spotify = auth_manager.get_client(token_info["access_token"])
     
     return {
         "spotify": spotify,
@@ -205,7 +200,7 @@ def render_sidebar():
                 
         else:
             # Not logged in - Show Link Logic
-            auth_manager = get_auth_manager()
+            auth_manager = get_auth_manager().auth_manager
             
             # Check for return code from Spotify
             query_params = st.query_params

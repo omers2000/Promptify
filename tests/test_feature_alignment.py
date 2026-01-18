@@ -8,7 +8,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from config.model_consts import FEATURE_ORDER
 from data_class.recommendation_params import LocalSearchParams, AudioFeatures, FeatureWeights
-from logic.search_engine import SearchEngine
+from pipelines.search_engine import SearchEngine
 
 class TestFeatureAlignment(unittest.TestCase):
     
