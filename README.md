@@ -58,8 +58,28 @@ Beyond the system implementation, this project focuses on a comparative study of
 
 ## System Design
 ### High-Level Architecture
-[כאן כדאי להוסיף דיאגרמה המראה את הזרימה:
-User Input -> Streamlit UI -> Gemini Wrapper -> **Method A/B** -> Spotify API -> Playlist Creation]
+```mermaid
+graph TD
+    classDef startEnd fill:#f9f,stroke:#333,stroke-width:2px,color:#000;
+    classDef process fill:#d4e1f5,stroke:#333,stroke-width:1px,color:#000;
+    classDef decision fill:#ffe0b2,stroke:#e65100,stroke-width:2px,color:#000;
+    classDef api fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px,color:#000;
+
+    User([User Input]):::startEnd --> Gemini[Gemini Interpretation]:::process
+    Gemini --> Split{Strategy Split}:::decision
+
+    Split -- "Method A (API Based)" --> A_Data[Seeds & Params from Gemini]:::process
+    A_Data --> ReccoAPI[ReccoBeats API]:::api
+    ReccoAPI --> A_Filter[Filter Top Matches via Cosine Similarity]:::process
+    A_Filter --> Merge(( ))
+
+    Split -- "Method B (Local Based)" --> B_Data[Params from Gemini]:::process
+    B_Data --> LocalDB[Get Top Matches via Cosine in Local DB]:::process
+    LocalDB --> Merge
+
+    Merge --> Spotify[Spotify API Integration]:::api
+    Spotify --> Create([Playlist Creation]):::startEnd
+```
 
 ### Technologies
 * **LLM:** Google Gemini (פירוט קצר למה נבחר – חלון קונטקסט, עלויות, יכולות JSON וכו').
