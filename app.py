@@ -86,8 +86,9 @@ def get_spotify_client():
         return None
     
     token_info = st.session_state.token_info
-    auth_manager = get_auth_manager().auth_manager
-    
+    auth_obj = get_auth_manager()
+    auth_manager = auth_obj.auth_manager
+
     # Auto-refresh logic
     if auth_manager.is_token_expired(token_info):
         try:
@@ -96,7 +97,7 @@ def get_spotify_client():
         except Exception:
             return None 
 
-    spotify = auth_manager.get_client(token_info["access_token"])
+    spotify = auth_obj.get_client(token_info["access_token"])
     
     return {
         "spotify": spotify,

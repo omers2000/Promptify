@@ -32,8 +32,8 @@ class Auth():
             cache_handler=MemoryCacheHandler(), # Essential for Cloud persistence
             show_dialog=True)
         
-    def get_client(self, auth: spotipy.Spotify) -> spotipy.Spotify:
+    def get_client(self, auth) -> spotipy.Spotify:
         """
         Return an authenticated Spotipy client.
         """
-        return spotipy.Spotify(auth_manager=auth)
+        return spotipy.Spotify(auth=auth)
