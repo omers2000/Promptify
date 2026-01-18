@@ -10,7 +10,7 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.dirname(current_dir)
 sys.path.append(parent_dir)
 
-from logic.search_engine import SearchEngine
+from pipelines.search_engine import SearchEngine
 from config.model_consts import FEATURE_ORDER
 
 class TestPipeline1_ExternalRanking(unittest.TestCase):

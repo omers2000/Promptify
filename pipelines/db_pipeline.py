@@ -4,7 +4,7 @@ Extracted from v2.py for use in the Streamlit app.
 """
 
 from data_class.recommendation_params import LocalSearchParams
-from logic.search_engine import SearchEngine
+from pipelines.search_engine import SearchEngine
 from config.model_consts import DEFAULT_PLAYLIST_LENGTH
 from pipelines.shared import get_gemini_interpretation
 

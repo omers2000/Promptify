@@ -7,8 +7,6 @@ import os
 import json
 from datetime import datetime
 import streamlit as st
-import spotipy
-from spotipy.oauth2 import SpotifyOAuth
 from dotenv import load_dotenv
 import gspread
 from google.oauth2.service_account import Credentials
@@ -18,6 +16,7 @@ from google.oauth2.service_account import Credentials
 from spotify.spotify_requests import UserRequests, SearchRequests
 from config.spotify_consts import REDIRECT_URI, SCOPE
 from pipelines import run_pipeline_v1, run_pipeline_v2
+from spotify.auth import Auth
 
 load_dotenv()
 
@@ -106,17 +105,13 @@ def save_vote_to_sheet(vote_type):
         # Safe retrieval of list lengths
         v1_len = len(st.session_state.v1_results["track_ids"]) if st.session_state.v1_results else 0
         v2_len = len(st.session_state.v2_results["track_ids"]) if st.session_state.v2_results else 0
-        # v1_str = ";".join(st.session_state.v1_results["track_ids"]) if st.session_state.v1_results else ""
-        # v2_str = ";".join(st.session_state.v2_results["track_ids"]) if st.session_state.v2_results else ""
 
         row = [
             datetime.now().isoformat(),
             st.session_state.current_prompt,
             vote_type,
             v1_len,
-            v2_len,
-            # v1_str,
-            # v2_str
+            v2_len
         ]
         sheet.append_row(row)
         
@@ -154,15 +149,8 @@ def get_spotify_client(username):
     cache_path = f".spotify_cache_{username}"
     
     try:
-        auth_manager = SpotifyOAuth(
-            client_id=client_id,
-            client_secret=client_secret,
-            redirect_uri=REDIRECT_URI,
-            scope=SCOPE,
-            open_browser=True,
-            cache_path=cache_path
-        )
-        spotify = spotipy.Spotify(auth_manager=auth_manager)
+        auth_obj = Auth(client_id, client_secret, REDIRECT_URI, SCOPE, cache_path)
+        spotify = auth_obj.get_client()
         user_requests = UserRequests(spotify)
         search_requests = SearchRequests(spotify)
         profile = user_requests.get_profile()
