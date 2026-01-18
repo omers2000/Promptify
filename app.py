@@ -77,9 +77,9 @@ def get_auth_manager():
         st.stop()
 
     return SpotifyOAuth(
-        client_id=st.secrets["SPOTIPY_CLIENT_ID"],
-        client_secret=st.secrets["SPOTIPY_CLIENT_SECRET"],
-        redirect_uri=st.secrets["SPOTIPY_REDIRECT_URI"],
+        client_id=client_id,
+        client_secret=client_secret,
+        redirect_uri=redirect_uri,
         scope=SCOPE,
         cache_handler=MemoryCacheHandler(), # Essential for Cloud persistence
         show_dialog=True

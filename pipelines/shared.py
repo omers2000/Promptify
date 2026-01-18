@@ -29,8 +29,8 @@ def get_gemini_interpretation(user_prompt: str, response_model: type[BaseModel])
     """
     if not user_prompt.strip():
         raise ValueError("Playlist description cannot be empty.")
-    
-    api_key = st.secrets["GEMINI_KEY"]
+
+    api_key = st.secrets.get("GEMINI_KEY") or os.getenv("GEMINI_KEY")
     if not api_key:
         raise ValueError("GEMINI_KEY not found in environment variables.")
     
