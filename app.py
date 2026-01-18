@@ -4,6 +4,7 @@ Compares two recommendation pipelines: API-based (V1) vs Database-based (V2)
 """
 
 import os
+import json
 from datetime import datetime
 import streamlit as st
 from dotenv import load_dotenv
@@ -24,7 +25,7 @@ load_dotenv()
 
 SHEET_ID = "1l-iMIcJhzhHIiFUqJFM6Dm1RgMYds4WEhrpl-XwZkWc"
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
-CREDENTIALS_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "credentials.json")
+CREDENTIALS_PATH = json.loads(st.secrets.get("CREDENTIALS_PATH"), strict=False) or os.path.join(os.path.dirname(os.path.abspath(__file__)), "credentials.json")
 
 # ============================================================
 # STATE MANAGEMENT
