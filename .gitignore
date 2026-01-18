@@ -24,5 +24,8 @@ songs_DB/songs_meta.csv
 tracks_features.npy
 tracks_meta.csv
 
+# Streamlit secrets file
+.streamlit/secrets.toml
+
 .DS_Store
 **/.DS_Store
