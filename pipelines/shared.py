@@ -5,6 +5,7 @@ Shared utilities for both recommendation pipelines.
 import os
 from dotenv import load_dotenv
 from pydantic import BaseModel
+import streamlit as st
 
 from llm.llm_prompt_interpreter import LlmPromptInterpreter
 
@@ -29,7 +30,7 @@ def get_gemini_interpretation(user_prompt: str, response_model: type[BaseModel])
     if not user_prompt.strip():
         raise ValueError("Playlist description cannot be empty.")
     
-    api_key = os.getenv("GEMINI_KEY")
+    api_key = st.secrets["GEMINI_KEY"]
     if not api_key:
         raise ValueError("GEMINI_KEY not found in environment variables.")
     
