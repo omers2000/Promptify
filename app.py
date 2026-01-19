@@ -3,18 +3,22 @@ Promptify - Music Recommendation Comparison App
 """
 
 import os
-import json
+import shutil
 from datetime import datetime
 import streamlit as st
 from dotenv import load_dotenv
 import gspread
 from google.oauth2.service_account import Credentials
 
+# --- Direct Spotipy Imports (Bypassing local Auth wrapper to fix bugs) ---
+import spotipy
+from spotipy.oauth2 import SpotifyOAuth
+from spotipy.cache_handler import CacheFileHandler
+
 # --- Local Imports ---
 from spotify.spotify_requests import UserRequests, SearchRequests
 from config.spotify_consts import SCOPE
 from pipelines import run_pipeline_v1, run_pipeline_v2
-from spotify.auth import Auth
 
 load_dotenv()
 
@@ -30,7 +34,6 @@ SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 # ============================================================
 
 def init_session_state():
-    """Initialize all session state variables."""
     defaults = {
         "token_info": None,
         "user_profile": None,
@@ -46,60 +49,59 @@ def init_session_state():
         "vote_submitted": False,
         "vote_success": False
     }
-    
     for key, value in defaults.items():
         if key not in st.session_state:
             st.session_state[key] = value
 
 # ============================================================
-# AUTHENTICATION LOGIC
+# AUTHENTICATION (DIRECT IMPLEMENTATION)
 # ============================================================
 
 def get_auth_manager():
-    """Creates a SpotifyOAuth manager."""
+    """
+    Creates a SpotifyOAuth manager directly using Spotipy.
+    We do NOT delete the cache here anymore.
+    """
     client_id = st.secrets.get("SP_CLIENT_ID") or os.getenv("SP_CLIENT_ID")
     client_secret = st.secrets.get("SP_CLIENT_SECRET") or os.getenv("SP_CLIENT_SECRET")
     redirect_uri = st.secrets.get("REDIRECT_URI") or os.getenv("REDIRECT_URI")
     
     if not redirect_uri:
-        st.error("❌ Missing REDIRECT_URI in Secrets.")
+        st.error("❌ Critical Error: REDIRECT_URI is missing from Secrets.")
         st.stop()
 
-    # FIX: Force delete cache file to prevent "Works once" bug
-    # This forces Spotipy to use the memory-based session token instead of a stale file.
-    if os.path.exists(".cache"):
-        os.remove(".cache")
+    # Use a specific cache handler that we control
+    cache_handler = CacheFileHandler(cache_path=".spotify_cache")
 
-    # We use the 4-argument constructor that worked for you before
-    return Auth(
+    return SpotifyOAuth(
         client_id=client_id,
         client_secret=client_secret,
         redirect_uri=redirect_uri,
-        scope=SCOPE
+        scope=SCOPE,
+        cache_handler=cache_handler,
+        show_dialog=True
     )
 
 def handle_oauth_callback():
-    """Captures the 'code' from URL immediately on app load."""
+    """Checks URL for 'code' at startup."""
     if "code" in st.query_params:
-        auth_manager = get_auth_manager().auth_manager
-        
+        sp_oauth = get_auth_manager()
         try:
             code = st.query_params["code"]
+            # Step 1: Exchange code for token
+            token_info = sp_oauth.get_access_token(code)
             
-            # Exchange code for token
-            token_info = auth_manager.get_access_token(code)
-            
+            # Step 2: verify we got a token
             if token_info:
                 st.session_state.token_info = token_info
-                # CRITICAL: Clear URL so we don't reuse the code
+                # Step 3: Clear URL to prevent re-use
                 st.query_params.clear()
                 st.rerun()
             else:
-                st.error("❌ Token exchange failed. Please try again.")
+                st.error("❌ Token Exchange Failed (Result was None)")
                 
         except Exception as e:
             st.error(f"❌ Login Error: {e}")
-            # Do NOT rerun here, let the user see the error
 
 def get_spotify_client():
     """Returns authenticated client or None."""
@@ -107,19 +109,19 @@ def get_spotify_client():
         return None
     
     token_info = st.session_state.token_info
-    auth_obj = get_auth_manager()
-    auth_manager = auth_obj.auth_manager
+    sp_oauth = get_auth_manager()
 
-    # Check validity / Auto-refresh
+    # Auto-refresh logic
     try:
-        if auth_manager.is_token_expired(token_info):
-            token_info = auth_manager.refresh_access_token(token_info["refresh_token"])
+        if sp_oauth.is_token_expired(token_info):
+            token_info = sp_oauth.refresh_access_token(token_info["refresh_token"])
             st.session_state.token_info = token_info
-    except Exception:
+    except Exception as e:
+        st.warning("Session expired. Please log in again.")
         st.session_state.token_info = None
         return None
 
-    spotify = auth_obj.get_client(token_info["access_token"])
+    spotify = spotipy.Spotify(auth=token_info["access_token"])
     
     return {
         "spotify": spotify,
@@ -133,9 +135,9 @@ def get_spotify_client():
 
 def render_sidebar():
     with st.sidebar:
+        st.caption("🚀 v3.0 - Direct Auth")
         st.header("🔐 Spotify Auth")
         
-        # Check if we have a valid client
         client_tools = get_spotify_client()
         
         if client_tools:
@@ -147,29 +149,31 @@ def render_sidebar():
                 profile = st.session_state.user_profile
                 st.success(f"Connected: **{profile['display_name']}**")
                 
-                if st.button("Log Out / Reset"):
+                if st.button("Log Out"):
+                    # 1. Clear Session
                     st.session_state.token_info = None
                     st.session_state.user_profile = None
+                    # 2. Delete Cache File (Only on Logout!)
+                    if os.path.exists(".spotify_cache"):
+                        os.remove(".spotify_cache")
                     st.rerun()
 
-            except Exception as e:
-                st.warning("Connection lost. Please log in again.")
+            except Exception:
                 st.session_state.token_info = None
                 st.rerun()
                 
         else:
             # --- LOGGED OUT ---
-            auth_manager = get_auth_manager().auth_manager
-            # Force 'show_dialog=True' to ensure Spotify asks for permission again (fixes loops)
-            auth_url = auth_manager.get_authorize_url()
+            sp_oauth = get_auth_manager()
+            auth_url = sp_oauth.get_authorize_url()
             
-            st.markdown(f"[**👉 Click to Login**]({auth_url})")
-            
-            # DEBUGGING: Help you see what's wrong
+            st.link_button("👉 Log in with Spotify", auth_url, type="primary")
+
+            # Diagnostic info
             with st.expander("Debug Info"):
+                has_code = "code" in st.query_params
+                st.write(f"URL Code Present: {has_code}")
                 st.write(f"Session Token: {'✅ Set' if st.session_state.token_info else '❌ None'}")
-                if "code" in st.query_params:
-                    st.write("⚠️ Code found in URL but not processed yet.")
 
         st.divider()
         st.markdown("### How to Vote\n1. Generate Playlists\n2. Listen on Spotify\n3. Click 'Option A', 'B', or 'Tie'")
@@ -186,9 +190,7 @@ def render_input_area():
     
     col1, col2, col3 = st.columns([1, 1, 1])
     with col2:
-        # Only enable button if logged in
         is_logged_in = st.session_state.token_info is not None
-        
         if st.button("🎲 Generate", type="primary", disabled=not is_logged_in, use_container_width=True):
             if not st.session_state.current_prompt.strip():
                 st.error("⚠️ Please enter a playlist description")
@@ -196,7 +198,7 @@ def render_input_area():
                 run_generation_logic()
 
 # ============================================================
-# LOGIC & RESULTS (Unchanged)
+# LOGIC & RESULTS
 # ============================================================
 
 def run_generation_logic():
@@ -310,13 +312,11 @@ def render_voting_buttons():
 def main():
     st.set_page_config(page_title="Promptify", page_icon="🎵", layout="wide")
     
-    # 1. Init State
     init_session_state()
     
-    # 2. Check for Code (Before UI)
+    # Check URL Code
     handle_oauth_callback()
     
-    # 3. Render
     st.title("🎵 Promptify")
     render_sidebar()
     render_input_area()
