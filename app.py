@@ -113,31 +113,37 @@ def get_spotify_client():
 def get_gsheet_client():
     """Get authenticated Google Sheets client."""
     try:
+        # 1. Initialize creds dictionary
         creds_dict = None
         
-        # 1. Try to load from Secrets (Standard TOML)
-        if "gcp_service_account" in st.secrets:
-            creds_dict = dict(st.secrets["gcp_service_account"])
-        
-        # 2. Try to load from Secrets (JSON String fallback)
-        elif "gcp_json" in st.secrets:
-            creds_dict = json.loads(st.secrets["gcp_json"])
+        # 2. Check Streamlit Secrets (Cloud)
+        if hasattr(st, "secrets"):
+            if "gcp_service_account" in st.secrets:
+                # Convert the AttrDict to a standard Python dict
+                creds_dict = dict(st.secrets["gcp_service_account"])
+            elif "gcp_json" in st.secrets:
+                # Parse the JSON string
+                creds_dict = json.loads(st.secrets["gcp_json"])
 
+        # 3. Check Local File (Fallback)
+        if not creds_dict and os.path.exists("credentials.json"):
+            creds_dict = json.load(open("credentials.json"))
+
+        # 4. Validate and Fix Private Key
         if not creds_dict:
-            st.error("❌ Secrets Error: Could not find 'gcp_service_account' or 'gcp_json' in secrets.")
+            st.error("❌ Auth Error: No credentials found in Secrets or local file.")
             return None
-
-        # --- THE CRITICAL FIX ---
-        # Replace escaped newlines with actual newlines
+            
+        # CRITICAL FIX: Handle newline characters in private key
         if "private_key" in creds_dict:
             creds_dict["private_key"] = creds_dict["private_key"].replace("\\n", "\n")
 
+        # 5. Authorize
         creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
         return gspread.authorize(creds)
 
     except Exception as e:
-        # Show the ACTUAL error message on screen so we can debug
-        st.error(f"❌ Connection Error: {e}") 
+        st.error(f"❌ Connection Error: {e}")
         return None
 
 def save_vote_to_sheet(vote_type):
