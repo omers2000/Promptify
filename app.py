@@ -25,7 +25,7 @@ load_dotenv()
 
 SHEET_ID = "1l-iMIcJhzhHIiFUqJFM6Dm1RgMYds4WEhrpl-XwZkWc"
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
-CREDENTIALS_PATH = json.loads(st.secrets.get("CREDENTIALS_PATH"), strict=False) or os.path.join(os.path.dirname(os.path.abspath(__file__)), "credentials.json")
+CREDENTIALS_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "credentials.json")
 
 # ============================================================
 # STATE MANAGEMENT
@@ -113,23 +113,36 @@ def get_spotify_client():
 def get_gsheet_client():
     """Get authenticated Google Sheets client."""
     try:
-        # 1. Check Streamlit Secrets (Cloud)
-        if "gcp_service_account" in st.secrets:
-            creds_dict = dict(st.secrets["gcp_service_account"])
+        creds = None
+        
+        # Option 1: Streamlit Cloud secrets (wrapped safely)
+        try:
+            if hasattr(st, 'secrets') and "gcp_service_account" in st.secrets:
+                creds_dict = dict(st.secrets["gcp_service_account"])
+                creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
+        except Exception:
+            pass  # No secrets file, continue to other options
+        
+        # Option 2: Environment variable (JSON string)
+        if creds is None and os.getenv("GOOGLE_CREDENTIALS"):
+            creds_json = os.getenv("GOOGLE_CREDENTIALS")
+            creds_dict = json.loads(creds_json)
             creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
-            return gspread.authorize(creds)
         
-        # 2. Check Local File
-        elif os.path.exists(CREDENTIALS_PATH):
+        # Option 3: Local credentials file
+        if creds is None and os.path.exists(CREDENTIALS_PATH):
             creds = Credentials.from_service_account_file(CREDENTIALS_PATH, scopes=SCOPES)
-            return gspread.authorize(creds)
         
-        else:
-            st.error("❌ Google Sheets credentials not found in Secrets.")
+        if creds is None:
+            st.error(f"❌ Google Sheets credentials not found at: {CREDENTIALS_PATH}")
             return None
-
+        
+        return gspread.authorize(creds)
+    except json.JSONDecodeError as e:
+        st.error(f"❌ Invalid JSON in GOOGLE_CREDENTIALS: {str(e)}")
+        return None
     except Exception as e:
-        st.error(f"❌ Connection Error: {str(e)}")
+        st.error(f"❌ Failed to connect to Google Sheets: {str(e)}")
         return None
 
 def save_vote_to_sheet(vote_type):
