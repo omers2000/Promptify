@@ -25,7 +25,6 @@ load_dotenv()
 
 SHEET_ID = "1l-iMIcJhzhHIiFUqJFM6Dm1RgMYds4WEhrpl-XwZkWc"
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
-# Set local path fallback
 CREDENTIALS_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "credentials.json")
 
 # ============================================================
@@ -47,7 +46,8 @@ def init_session_state():
         "playlist_a_url": None,
         "playlist_b_url": None,
         "vote_submitted": False,
-        "vote_success": False
+        "vote_success": False,
+        "vote_error": None  # Track voting errors
     }
     
     for key, value in defaults.items():
@@ -68,7 +68,6 @@ def get_auth_manager():
     client_secret = st.secrets.get("SP_CLIENT_SECRET") or os.getenv("SP_CLIENT_SECRET")
     
     # 2. Get Redirect URI
-    # CRITICAL: This must match your deployed URL exactly in Secrets
     redirect_uri = st.secrets.get("REDIRECT_URI") or os.getenv("REDIRECT_URI")
     
     if not redirect_uri:
@@ -111,10 +110,12 @@ def get_spotify_client():
 # BACKEND SERVICES (Google Sheets)
 # ============================================================
 
+@st.cache_resource
 def get_gsheet_client():
     """
     Get authenticated Google Sheets client.
     Prioritizes Streamlit Secrets -> Env Var JSON -> Local File.
+    Uses @st.cache_resource to avoid re-authenticating on every click.
     """
     try:
         creds = None
@@ -125,7 +126,7 @@ def get_gsheet_client():
                 creds_dict = dict(st.secrets["gcp_service_account"])
                 creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
         except Exception:
-            pass  # No secrets file, continue to other options
+            pass
         
         # Option 2: Environment variable (JSON string)
         if creds is None and os.getenv("GOOGLE_CREDENTIALS"):
@@ -138,23 +139,22 @@ def get_gsheet_client():
             creds = Credentials.from_service_account_file(CREDENTIALS_PATH, scopes=SCOPES)
         
         if creds is None:
-            # Only show error if we are actually trying to vote
             return None
         
         return gspread.authorize(creds)
 
-    except json.JSONDecodeError as e:
-        st.error(f"❌ Invalid JSON in GOOGLE_CREDENTIALS: {str(e)}")
-        return None
     except Exception as e:
-        st.error(f"❌ Failed to connect to Google Sheets: {str(e)}")
+        print(f"GSheet Connection Error: {e}")
         return None
 
 def save_vote_to_sheet(vote_type):
     """Callback: Saves vote to Google Sheets."""
+    # Reset error state
+    st.session_state.vote_error = None
+    
     client = get_gsheet_client()
     if not client:
-        st.error("❌ Google Sheets credentials not configured.")
+        st.session_state.vote_error = "❌ Google Sheets credentials missing or invalid."
         return
     
     try:
@@ -184,7 +184,7 @@ def save_vote_to_sheet(vote_type):
         st.session_state.vote_submitted = True
         
     except Exception as e:
-        st.error(f"❌ Failed to save vote: {str(e)}")
+        st.session_state.vote_error = f"❌ Failed to save vote: {str(e)}"
         st.session_state.vote_success = False
 
 def create_playlist_wrapper(option_name, track_ids, user_requests):
@@ -261,7 +261,6 @@ def render_input_area():
     col1, col2, col3 = st.columns([1, 1, 1])
     with col2:
         if st.button("🎲 Generate", type="primary", use_container_width=True):
-            # Validate on click instead of disabled prop
             if not st.session_state.token_info:
                 st.error("⚠️ Please login to Spotify first")
             elif not st.session_state.current_prompt.strip():
@@ -270,7 +269,6 @@ def render_input_area():
                 run_generation_logic()
 
 def run_generation_logic():
-    # Prevent double execution from st.rerun()
     if st.session_state.is_generating:
         return
     st.session_state.is_generating = True
@@ -282,6 +280,7 @@ def run_generation_logic():
     st.session_state.show_results = False
     st.session_state.vote_submitted = False
     st.session_state.vote_success = False
+    st.session_state.vote_error = None
     st.session_state.v1_results = None
     st.session_state.v2_results = None
     st.session_state.v1_error = None
@@ -349,15 +348,18 @@ def render_voting_buttons():
     st.divider()
     st.header("🗳️ Cast Your Vote")
     
-    if st.session_state.vote_submitted:
-        if st.session_state.vote_success:
-            st.success("✅ Vote Saved! Thank you.")
-        else:
-            st.error("❌ Error saving vote.")
+    # Show error if one occurred during callback
+    if st.session_state.vote_error:
+        st.error(st.session_state.vote_error)
+    
+    if st.session_state.vote_submitted and st.session_state.vote_success:
+        st.success("✅ Vote Saved! Thank you.")
         
         if st.button("Start Over"):
             st.session_state.show_results = False
             st.session_state.current_prompt = ""
+            st.session_state.vote_submitted = False
+            st.session_state.vote_error = None
             st.rerun()
     else:
         c1, c2, c3 = st.columns(3)
