@@ -5,6 +5,7 @@ Compares two recommendation pipelines: API-based (V1) vs Database-based (V2)
 
 import os
 import json
+import time
 from datetime import datetime
 import streamlit as st
 from dotenv import load_dotenv
@@ -43,6 +44,8 @@ def init_session_state():
         "v2_results": None,
         "v1_error": None,
         "v2_error": None,
+        "v1_runtime": None,
+        "v2_runtime": None,
         "playlist_a_url": None,
         "playlist_b_url": None,
         "vote_submitted": False,
@@ -152,7 +155,9 @@ def save_vote_to_sheet(vote_type):
             vote_type,
             len(v1_ids),
             len(v2_ids),
-            voter_name
+            voter_name,
+            st.session_state.v1_runtime,
+            st.session_state.v2_runtime
         ]
         sheet.append_row(row)
         
@@ -217,9 +222,9 @@ def render_sidebar():
                 except Exception as e:
                     st.error(f"Login failed: {e}")
             else:
-                # Show Auth Link
+                # Show Auth Link - use link_button to ensure same-tab navigation
                 auth_url = auth_manager.get_authorize_url()
-                st.markdown(f"[**Click here to Login with Spotify**]({auth_url})")
+                st.link_button("🔑 Login with Spotify", auth_url, use_container_width=True)
 
         st.divider()
         st.markdown("### How to Vote\n1. Generate Playlists\n2. Listen on Spotify\n3. Click 'Option A', 'B', or 'Tie'")
@@ -264,18 +269,24 @@ def run_generation_logic():
     st.session_state.v2_error = None
     
     # Run Pipeline V1
-    with st.spinner("Generating Option A (API)..."):
+    with st.spinner("Generating Option A..."):
         try:
+            start_time = time.time()
             st.session_state.v1_results = run_pipeline_v1(prompt, client_tools["search_requests"])
+            st.session_state.v1_runtime = round(time.time() - start_time, 2)
         except Exception as e:
             st.session_state.v1_error = str(e)
+            st.session_state.v1_runtime = None
 
     # Run Pipeline V2
-    with st.spinner("Generating Option B (DB)..."):
+    with st.spinner("Generating Option B..."):
         try:
+            start_time = time.time()
             st.session_state.v2_results = run_pipeline_v2(prompt)
+            st.session_state.v2_runtime = round(time.time() - start_time, 2)
         except Exception as e:
             st.session_state.v2_error = str(e)
+            st.session_state.v2_runtime = None
             
     # Create Playlists
     if st.session_state.v1_results:
