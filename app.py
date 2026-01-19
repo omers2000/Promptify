@@ -1,6 +1,5 @@
 """
 Promptify - Music Recommendation Comparison App
-Compares two recommendation pipelines: API-based (V1) vs Database-based (V2)
 """
 
 import os
@@ -53,11 +52,11 @@ def init_session_state():
             st.session_state[key] = value
 
 # ============================================================
-# CLOUD AUTHENTICATION & SPOTIFY CLIENT
+# AUTHENTICATION LOGIC
 # ============================================================
 
 def get_auth_manager():
-    """Creates a SpotifyOAuth manager using Secrets or Env."""
+    """Creates a SpotifyOAuth manager."""
     client_id = st.secrets.get("SP_CLIENT_ID") or os.getenv("SP_CLIENT_ID")
     client_secret = st.secrets.get("SP_CLIENT_SECRET") or os.getenv("SP_CLIENT_SECRET")
     redirect_uri = st.secrets.get("REDIRECT_URI") or os.getenv("REDIRECT_URI")
@@ -65,6 +64,14 @@ def get_auth_manager():
     if not redirect_uri:
         st.error("❌ Missing REDIRECT_URI in Secrets.")
         st.stop()
+
+    # FIX: Attempt to prevent file caching issues on Cloud
+    # If a .cache file exists from a previous bad run, delete it.
+    if os.path.exists(".cache"):
+        try:
+            os.remove(".cache")
+        except:
+            pass
 
     return Auth(
         client_id=client_id,
@@ -74,27 +81,30 @@ def get_auth_manager():
     )
 
 def handle_oauth_callback():
-    """
-    CRITICAL FIX: Checks URL for 'code' immediately.
-    Must run before any UI is rendered to prevent redirect loops.
-    """
-    if "code" in st.query_params and not st.session_state.token_info:
+    """Captures the 'code' from URL immediately on app load."""
+    if "code" in st.query_params:
         auth_manager = get_auth_manager().auth_manager
         try:
             code = st.query_params["code"]
+            
+            # Exchange code for token
             token_info = auth_manager.get_access_token(code)
+            
+            # Save to session
             st.session_state.token_info = token_info
             
-            # Clear URL so we don't try to use the code again (it's one-time use)
+            # CRITICAL: Clear URL so we don't reuse the code
             st.query_params.clear()
             st.rerun()
+            
         except Exception as e:
-            st.error(f"❌ Login failed: {e}")
-            # Optional: Clear params even on failure to allow retry
+            # If login fails, clear everything and show error
             st.query_params.clear()
+            st.error(f"❌ Login Error: {e}")
+            # Do NOT rerun here, let the user see the error
 
 def get_spotify_client():
-    """Returns an authenticated Spotify client if valid."""
+    """Returns authenticated client or None."""
     if not st.session_state.token_info:
         return None
     
@@ -102,13 +112,14 @@ def get_spotify_client():
     auth_obj = get_auth_manager()
     auth_manager = auth_obj.auth_manager
 
-    # Auto-refresh logic
+    # Check if token is expired
     if auth_manager.is_token_expired(token_info):
         try:
+            # Try to refresh
             token_info = auth_manager.refresh_access_token(token_info["refresh_token"])
             st.session_state.token_info = token_info
-        except Exception as e:
-            st.warning(f"Session expired: {e}")
+        except Exception:
+            # If refresh fails, kill the session so they can log in again
             st.session_state.token_info = None
             return None
 
@@ -121,106 +132,42 @@ def get_spotify_client():
     }
 
 # ============================================================
-# BACKEND SERVICES
-# ============================================================
-
-def get_gsheet_client():
-    """Get authenticated Google Sheets client."""
-    try:
-        # 1. Check Streamlit Secrets (Cloud)
-        if "gcp_service_account" in st.secrets:
-            creds_dict = dict(st.secrets["gcp_service_account"])
-            creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
-            return gspread.authorize(creds)
-        
-        # 2. Check Local File (Fallback)
-        credentials_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "credentials.json")
-        if os.path.exists(credentials_path):
-            creds = Credentials.from_service_account_file(credentials_path, scopes=SCOPES)
-            return gspread.authorize(creds)
-        
-        st.error("❌ Google Sheets credentials not found.")
-        return None
-
-    except Exception as e:
-        st.error(f"❌ Connection Error: {str(e)}")
-        return None
-
-def save_vote_to_sheet(vote_type):
-    """Callback: Saves vote to Google Sheets."""
-    client = get_gsheet_client()
-    if not client:
-        return
-    
-    try:
-        sheet = client.open_by_key(SHEET_ID).sheet1
-        
-        v1_ids = st.session_state.v1_results["track_ids"] if st.session_state.v1_results else []
-        v2_ids = st.session_state.v2_results["track_ids"] if st.session_state.v2_results else []
-
-        row = [
-            datetime.now().isoformat(),
-            st.session_state.current_prompt,
-            vote_type,
-            len(v1_ids),
-            len(v2_ids),
-            ";".join(v1_ids),
-            ";".join(v2_ids)
-        ]
-        sheet.append_row(row)
-        
-        st.session_state.vote_success = True
-        st.session_state.vote_submitted = True
-        
-    except Exception as e:
-        st.error(f"❌ Failed to save vote: {str(e)}")
-        st.session_state.vote_success = False
-
-def create_playlist_wrapper(option_name, track_ids, user_requests):
-    try:
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
-        playlist_name = f"Promptify Option {option_name} - {timestamp}"
-        playlist = user_requests.create_playlist(name=playlist_name, songs=track_ids)
-        return playlist.get("external_urls", {}).get("spotify")
-    except Exception as e:
-        st.warning(f"Could not create playlist: {e}")
-        return None
-
-# ============================================================
 # UI COMPONENTS
 # ============================================================
 
 def render_sidebar():
     with st.sidebar:
-        st.caption("🚀 v2.0 - Auth Fix")
         st.header("🔐 Spotify Auth")
         
         client_tools = get_spotify_client()
         
         if client_tools:
+            # --- LOGGED IN STATE ---
             try:
-                # Retrieve profile if missing
                 if not st.session_state.user_profile:
                     st.session_state.user_profile = client_tools["user_requests"].get_profile()
                 
                 profile = st.session_state.user_profile
-                st.success(f"Connected: **{profile['display_name']}**")
+                st.success(f"Connected as **{profile['display_name']}**")
                 
-                if st.button("Log Out"):
-                    st.session_state.token_info = None
-                    st.session_state.user_profile = None
-                    st.rerun()
-            except Exception as e:
-                # If profile fetch fails, token might be bad. Reset.
-                st.error(f"Auth Error: {e}")
+                # Hidden "Reset" option just in case (Cleaner than big Logout button)
+                with st.expander("Connection Settings"):
+                    if st.button("Disconnect / Reset"):
+                        st.session_state.token_info = None
+                        st.rerun()
+
+            except Exception:
                 st.session_state.token_info = None
                 st.rerun()
                 
         else:
-            # Show Login Link if no valid token
+            # --- LOGGED OUT STATE ---
             auth_manager = get_auth_manager().auth_manager
             auth_url = auth_manager.get_authorize_url()
-            st.markdown(f"[**Click here to Login with Spotify**]({auth_url})")
+            
+            st.info("Please connect to Spotify to start.")
+            # Standard Streamlit Link Button is cleaner
+            st.link_button("👉 Connect Spotify", auth_url, type="primary")
 
         st.divider()
         st.markdown("### How to Vote\n1. Generate Playlists\n2. Listen on Spotify\n3. Click 'Option A', 'B', or 'Tie'")
@@ -237,39 +184,38 @@ def render_input_area():
     
     col1, col2, col3 = st.columns([1, 1, 1])
     with col2:
-        if st.button("🎲 Generate", type="primary", use_container_width=True):
-            if not st.session_state.token_info:
-                st.error("⚠️ Please login to Spotify first")
-            elif not st.session_state.current_prompt.strip():
+        # Check login status for button state
+        is_logged_in = st.session_state.token_info is not None
+        
+        if st.button("🎲 Generate", type="primary", disabled=not is_logged_in, use_container_width=True):
+            if not st.session_state.current_prompt.strip():
                 st.error("⚠️ Please enter a playlist description")
             else:
                 run_generation_logic()
 
+# ... (Include the rest of your functions: run_generation_logic, render_results, etc. unchanged) ...
+
 def run_generation_logic():
-    if st.session_state.is_generating:
-        return
+    if st.session_state.is_generating: return
     st.session_state.is_generating = True
     
     client_tools = get_spotify_client()
     prompt = st.session_state.current_prompt
     
-    # Reset State
     st.session_state.show_results = False
     st.session_state.vote_submitted = False
-    st.session_state.vote_success = False
     st.session_state.v1_results = None
     st.session_state.v2_results = None
     st.session_state.v1_error = None
     st.session_state.v2_error = None
     
-    # Run Pipeline V1
+    # Run Pipelines
     with st.spinner("Generating Option A (API)..."):
         try:
             st.session_state.v1_results = run_pipeline_v1(prompt, client_tools["search_requests"])
         except Exception as e:
             st.session_state.v1_error = str(e)
 
-    # Run Pipeline V2
     with st.spinner("Generating Option B (DB)..."):
         try:
             st.session_state.v2_results = run_pipeline_v2(prompt)
@@ -285,61 +231,75 @@ def run_generation_logic():
     st.session_state.show_results = True
     st.session_state.is_generating = False
     st.rerun()
+    
+# ... (Include render_results, render_voting_buttons, save_vote_to_sheet, get_gsheet_client, create_playlist_wrapper) ...
+def get_gsheet_client():
+    try:
+        if "gcp_service_account" in st.secrets:
+            creds_dict = dict(st.secrets["gcp_service_account"])
+            creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
+            return gspread.authorize(creds)
+        credentials_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "credentials.json")
+        if os.path.exists(credentials_path):
+            creds = Credentials.from_service_account_file(credentials_path, scopes=SCOPES)
+            return gspread.authorize(creds)
+        return None
+    except Exception: return None
+
+def save_vote_to_sheet(vote_type):
+    client = get_gsheet_client()
+    if not client: return
+    try:
+        sheet = client.open_by_key(SHEET_ID).sheet1
+        v1_ids = st.session_state.v1_results["track_ids"] if st.session_state.v1_results else []
+        v2_ids = st.session_state.v2_results["track_ids"] if st.session_state.v2_results else []
+        row = [datetime.now().isoformat(), st.session_state.current_prompt, vote_type, len(v1_ids), len(v2_ids), ";".join(v1_ids), ";".join(v2_ids)]
+        sheet.append_row(row)
+        st.session_state.vote_success = True
+        st.session_state.vote_submitted = True
+    except Exception: st.session_state.vote_success = False
+
+def create_playlist_wrapper(option_name, track_ids, user_requests):
+    try:
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
+        playlist_name = f"Promptify Option {option_name} - {timestamp}"
+        playlist = user_requests.create_playlist(name=playlist_name, songs=track_ids)
+        return playlist.get("external_urls", {}).get("spotify")
+    except Exception: return None
 
 def render_results():
-    if not st.session_state.show_results:
-        return
-
+    if not st.session_state.show_results: return
     st.divider()
     st.header("🎯 Results")
-    
     col1, col2 = st.columns(2)
-    
     with col1:
         st.subheader("🎵 Option A")
-        if st.session_state.v1_error:
-            st.error(st.session_state.v1_error)
+        if st.session_state.v1_error: st.error(st.session_state.v1_error)
         elif st.session_state.v1_results:
-            if st.session_state.playlist_a_url:
-                st.link_button("🔗 Open Playlist A", st.session_state.playlist_a_url, use_container_width=True)
-            with st.expander("Show Tracks"):
-                st.write(st.session_state.v1_results["track_ids"])
-
+            if st.session_state.playlist_a_url: st.link_button("🔗 Open Playlist A", st.session_state.playlist_a_url, use_container_width=True)
+            with st.expander("Show Tracks"): st.write(st.session_state.v1_results["track_ids"])
     with col2:
         st.subheader("🎵 Option B")
-        if st.session_state.v2_error:
-            st.error(st.session_state.v2_error)
+        if st.session_state.v2_error: st.error(st.session_state.v2_error)
         elif st.session_state.v2_results:
-            if st.session_state.playlist_b_url:
-                st.link_button("🔗 Open Playlist B", st.session_state.playlist_b_url, use_container_width=True)
-            with st.expander("Show Tracks"):
-                st.write(st.session_state.v2_results["track_ids"])
-
-    if st.session_state.v1_results and st.session_state.v2_results:
-        render_voting_buttons()
+            if st.session_state.playlist_b_url: st.link_button("🔗 Open Playlist B", st.session_state.playlist_b_url, use_container_width=True)
+            with st.expander("Show Tracks"): st.write(st.session_state.v2_results["track_ids"])
+    if st.session_state.v1_results and st.session_state.v2_results: render_voting_buttons()
 
 def render_voting_buttons():
     st.divider()
     st.header("🗳️ Cast Your Vote")
-    
     if st.session_state.vote_submitted:
-        if st.session_state.vote_success:
-            st.success("✅ Vote Saved! Thank you.")
-        else:
-            st.error("❌ Error saving vote.")
-        
+        st.success("✅ Vote Saved!") if st.session_state.vote_success else st.error("❌ Error saving vote.")
         if st.button("Start Over"):
             st.session_state.show_results = False
             st.session_state.current_prompt = ""
             st.rerun()
     else:
         c1, c2, c3 = st.columns(3)
-        with c1:
-            st.button("👈 Option A is Better", use_container_width=True, on_click=save_vote_to_sheet, args=("V1",))
-        with c2:
-            st.button("🤝 It's a Tie", use_container_width=True, on_click=save_vote_to_sheet, args=("tie",))
-        with c3:
-            st.button("👉 Option B is Better", use_container_width=True, on_click=save_vote_to_sheet, args=("V2",))
+        with c1: st.button("👈 Option A is Better", use_container_width=True, on_click=save_vote_to_sheet, args=("V1",))
+        with c2: st.button("🤝 It's a Tie", use_container_width=True, on_click=save_vote_to_sheet, args=("tie",))
+        with c3: st.button("👉 Option B is Better", use_container_width=True, on_click=save_vote_to_sheet, args=("V2",))
 
 # ============================================================
 # MAIN
@@ -348,13 +308,11 @@ def render_voting_buttons():
 def main():
     st.set_page_config(page_title="Promptify", page_icon="🎵", layout="wide")
     
-    # 1. Initialize State
     init_session_state()
     
-    # 2. Handle OAuth Redirect (CRITICAL: Must be before UI)
+    # 1. Handle OAuth First
     handle_oauth_callback()
     
-    # 3. Render UI
     st.title("🎵 Promptify")
     render_sidebar()
     render_input_area()
