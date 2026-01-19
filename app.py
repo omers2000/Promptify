@@ -25,7 +25,6 @@ load_dotenv()
 
 SHEET_ID = "1l-iMIcJhzhHIiFUqJFM6Dm1RgMYds4WEhrpl-XwZkWc"
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
-CREDENTIALS_PATH = json.loads(st.secrets.get("CREDENTIALS_PATH"), strict=False) or os.path.join(os.path.dirname(os.path.abspath(__file__)), "credentials.json")
 
 # ============================================================
 # STATE MANAGEMENT
@@ -54,24 +53,17 @@ def init_session_state():
             st.session_state[key] = value
 
 # ============================================================
-# CLOUD AUTHENTICATION
+# CLOUD AUTHENTICATION & SPOTIFY CLIENT
 # ============================================================
 
 def get_auth_manager():
-    """
-    Creates a SpotifyOAuth manager optimized for Streamlit Cloud.
-    Requires REDIRECT_URI to be set in Streamlit Secrets.
-    """
-    # 1. Get Client ID/Secret from Secrets (preferred) or Env
+    """Creates a SpotifyOAuth manager using Secrets or Env."""
     client_id = st.secrets.get("SP_CLIENT_ID") or os.getenv("SP_CLIENT_ID")
     client_secret = st.secrets.get("SP_CLIENT_SECRET") or os.getenv("SP_CLIENT_SECRET")
-    
-    # 2. Get Redirect URI
-    # CRITICAL: This must match your deployed URL exactly in Secrets
     redirect_uri = st.secrets.get("REDIRECT_URI") or os.getenv("REDIRECT_URI")
     
     if not redirect_uri:
-        st.error("❌ Missing REDIRECT_URI. Please add it to Streamlit Secrets.")
+        st.error("❌ Missing REDIRECT_URI in Secrets.")
         st.stop()
 
     return Auth(
@@ -80,7 +72,27 @@ def get_auth_manager():
         redirect_uri=redirect_uri,
         scope=SCOPE
     )
-    
+
+def handle_oauth_callback():
+    """
+    CRITICAL FIX: Checks URL for 'code' immediately.
+    Must run before any UI is rendered to prevent redirect loops.
+    """
+    if "code" in st.query_params and not st.session_state.token_info:
+        auth_manager = get_auth_manager().auth_manager
+        try:
+            code = st.query_params["code"]
+            token_info = auth_manager.get_access_token(code)
+            st.session_state.token_info = token_info
+            
+            # Clear URL so we don't try to use the code again (it's one-time use)
+            st.query_params.clear()
+            st.rerun()
+        except Exception as e:
+            st.error(f"❌ Login failed: {e}")
+            # Optional: Clear params even on failure to allow retry
+            st.query_params.clear()
+
 def get_spotify_client():
     """Returns an authenticated Spotify client if valid."""
     if not st.session_state.token_info:
@@ -95,8 +107,10 @@ def get_spotify_client():
         try:
             token_info = auth_manager.refresh_access_token(token_info["refresh_token"])
             st.session_state.token_info = token_info
-        except Exception:
-            return None 
+        except Exception as e:
+            st.warning(f"Session expired: {e}")
+            st.session_state.token_info = None
+            return None
 
     spotify = auth_obj.get_client(token_info["access_token"])
     
@@ -119,14 +133,14 @@ def get_gsheet_client():
             creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
             return gspread.authorize(creds)
         
-        # 2. Check Local File
-        elif os.path.exists(CREDENTIALS_PATH):
-            creds = Credentials.from_service_account_file(CREDENTIALS_PATH, scopes=SCOPES)
+        # 2. Check Local File (Fallback)
+        credentials_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "credentials.json")
+        if os.path.exists(credentials_path):
+            creds = Credentials.from_service_account_file(credentials_path, scopes=SCOPES)
             return gspread.authorize(creds)
         
-        else:
-            st.error("❌ Google Sheets credentials not found in Secrets.")
-            return None
+        st.error("❌ Google Sheets credentials not found.")
+        return None
 
     except Exception as e:
         st.error(f"❌ Connection Error: {str(e)}")
@@ -178,14 +192,14 @@ def create_playlist_wrapper(option_name, track_ids, user_requests):
 
 def render_sidebar():
     with st.sidebar:
+        st.caption("🚀 v2.0 - Auth Fix")
         st.header("🔐 Spotify Auth")
         
-        # Check login status
         client_tools = get_spotify_client()
         
         if client_tools:
             try:
-                # Retrieve profile
+                # Retrieve profile if missing
                 if not st.session_state.user_profile:
                     st.session_state.user_profile = client_tools["user_requests"].get_profile()
                 
@@ -196,29 +210,17 @@ def render_sidebar():
                     st.session_state.token_info = None
                     st.session_state.user_profile = None
                     st.rerun()
-            except Exception:
+            except Exception as e:
+                # If profile fetch fails, token might be bad. Reset.
+                st.error(f"Auth Error: {e}")
                 st.session_state.token_info = None
                 st.rerun()
                 
         else:
-            # Not logged in - Show Link Logic
+            # Show Login Link if no valid token
             auth_manager = get_auth_manager().auth_manager
-            
-            # Check for return code from Spotify
-            query_params = st.query_params
-            if "code" in query_params:
-                try:
-                    code = query_params["code"]
-                    token_info = auth_manager.get_access_token(code)
-                    st.session_state.token_info = token_info
-                    st.query_params.clear()
-                    st.rerun()
-                except Exception as e:
-                    st.error(f"Login failed: {e}")
-            else:
-                # Show Auth Link
-                auth_url = auth_manager.get_authorize_url()
-                st.markdown(f"[**Click here to Login with Spotify**]({auth_url})")
+            auth_url = auth_manager.get_authorize_url()
+            st.markdown(f"[**Click here to Login with Spotify**]({auth_url})")
 
         st.divider()
         st.markdown("### How to Vote\n1. Generate Playlists\n2. Listen on Spotify\n3. Click 'Option A', 'B', or 'Tie'")
@@ -236,7 +238,6 @@ def render_input_area():
     col1, col2, col3 = st.columns([1, 1, 1])
     with col2:
         if st.button("🎲 Generate", type="primary", use_container_width=True):
-            # Validate on click instead of disabled prop
             if not st.session_state.token_info:
                 st.error("⚠️ Please login to Spotify first")
             elif not st.session_state.current_prompt.strip():
@@ -245,7 +246,6 @@ def render_input_area():
                 run_generation_logic()
 
 def run_generation_logic():
-    # Prevent double execution from st.rerun()
     if st.session_state.is_generating:
         return
     st.session_state.is_generating = True
@@ -295,7 +295,6 @@ def render_results():
     
     col1, col2 = st.columns(2)
     
-    # Option A
     with col1:
         st.subheader("🎵 Option A")
         if st.session_state.v1_error:
@@ -306,7 +305,6 @@ def render_results():
             with st.expander("Show Tracks"):
                 st.write(st.session_state.v1_results["track_ids"])
 
-    # Option B
     with col2:
         st.subheader("🎵 Option B")
         if st.session_state.v2_error:
@@ -349,7 +347,14 @@ def render_voting_buttons():
 
 def main():
     st.set_page_config(page_title="Promptify", page_icon="🎵", layout="wide")
+    
+    # 1. Initialize State
     init_session_state()
+    
+    # 2. Handle OAuth Redirect (CRITICAL: Must be before UI)
+    handle_oauth_callback()
+    
+    # 3. Render UI
     st.title("🎵 Promptify")
     render_sidebar()
     render_input_area()
