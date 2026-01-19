@@ -151,7 +151,7 @@ def save_vote_to_sheet(vote_type):
         voter_name = st.session_state.user_profile.get("display_name", "Unknown") if st.session_state.user_profile else "Unknown"
         
         row = [
-            datetime.now().isoformat(),
+            datetime.now(ZoneInfo("Asia/Jerusalem")).strftime("%d/%m/%Y %H:%M"),
             st.session_state.current_prompt,
             vote_type,
             len(v1_ids),
