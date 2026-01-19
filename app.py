@@ -56,7 +56,8 @@ def init_session_state():
 # ============================================================
 
 def get_auth_manager():
-    """Creates a SpotifyOAuth manager."""
+    """Creates a SpotifyOAuth manager with correct signature."""
+    # 1. Fetch Secrets
     client_id = st.secrets.get("SP_CLIENT_ID") or os.getenv("SP_CLIENT_ID")
     client_secret = st.secrets.get("SP_CLIENT_SECRET") or os.getenv("SP_CLIENT_SECRET")
     redirect_uri = st.secrets.get("REDIRECT_URI") or os.getenv("REDIRECT_URI")
@@ -64,44 +65,44 @@ def get_auth_manager():
     if not redirect_uri:
         st.error("❌ Missing REDIRECT_URI in Secrets.")
         st.stop()
+        
+    # 2. Define Cache Path (Restored from your original code)
+    # We use a fixed path because on Streamlit Cloud, files are ephemeral anyway.
+    cache_path = ".spotify_cache"
 
-    # FIX: Attempt to prevent file caching issues on Cloud
-    # If a .cache file exists from a previous bad run, delete it.
-    if os.path.exists(".cache"):
-        try:
-            os.remove(".cache")
-        except:
-            pass
-
+    # 3. Initialize Auth (Restored signature)
     return Auth(
-        client_id=client_id,
-        client_secret=client_secret,
-        redirect_uri=redirect_uri,
-        scope=SCOPE
+        client_id,
+        client_secret,
+        redirect_uri,
+        SCOPE,
+        cache_path  # <--- Added this back
     )
 
 def handle_oauth_callback():
     """Captures the 'code' from URL immediately on app load."""
     if "code" in st.query_params:
+        # Debugging: Show that we caught the code
+        with st.expander("🔌 Connection Debugging", expanded=False):
+            st.write("Code found in URL, attempting exchange...")
+            
         auth_manager = get_auth_manager().auth_manager
+        
         try:
             code = st.query_params["code"]
-            
-            # Exchange code for token
             token_info = auth_manager.get_access_token(code)
             
-            # Save to session
-            st.session_state.token_info = token_info
-            
-            # CRITICAL: Clear URL so we don't reuse the code
-            st.query_params.clear()
-            st.rerun()
-            
+            if token_info:
+                st.session_state.token_info = token_info
+                # Clear URL and Rerun
+                st.query_params.clear()
+                st.rerun()
+            else:
+                st.error("Token exchange returned None.")
+                
         except Exception as e:
-            # If login fails, clear everything and show error
-            st.query_params.clear()
             st.error(f"❌ Login Error: {e}")
-            # Do NOT rerun here, let the user see the error
+            # Do not clear params here so you can see the error
 
 def get_spotify_client():
     """Returns authenticated client or None."""
@@ -113,15 +114,15 @@ def get_spotify_client():
     auth_manager = auth_obj.auth_manager
 
     # Check if token is expired
-    if auth_manager.is_token_expired(token_info):
-        try:
-            # Try to refresh
+    try:
+        if auth_manager.is_token_expired(token_info):
             token_info = auth_manager.refresh_access_token(token_info["refresh_token"])
             st.session_state.token_info = token_info
-        except Exception:
-            # If refresh fails, kill the session so they can log in again
-            st.session_state.token_info = None
-            return None
+    except Exception as e:
+        # If refresh fails, kill the session
+        st.warning(f"Session expired, please log in again. ({e})")
+        st.session_state.token_info = None
+        return None
 
     spotify = auth_obj.get_client(token_info["access_token"])
     
@@ -142,32 +143,38 @@ def render_sidebar():
         client_tools = get_spotify_client()
         
         if client_tools:
-            # --- LOGGED IN STATE ---
+            # --- LOGGED IN ---
             try:
                 if not st.session_state.user_profile:
                     st.session_state.user_profile = client_tools["user_requests"].get_profile()
                 
                 profile = st.session_state.user_profile
-                st.success(f"Connected as **{profile['display_name']}**")
+                st.success(f"Connected: **{profile['display_name']}**")
                 
-                # Hidden "Reset" option just in case (Cleaner than big Logout button)
-                with st.expander("Connection Settings"):
-                    if st.button("Disconnect / Reset"):
-                        st.session_state.token_info = None
-                        st.rerun()
+                if st.button("Disconnect"):
+                    st.session_state.token_info = None
+                    st.session_state.user_profile = None
+                    # Clean cache file if it exists
+                    if os.path.exists(".spotify_cache"):
+                        os.remove(".spotify_cache")
+                    st.rerun()
 
             except Exception:
                 st.session_state.token_info = None
                 st.rerun()
                 
         else:
-            # --- LOGGED OUT STATE ---
+            # --- LOGGED OUT ---
             auth_manager = get_auth_manager().auth_manager
+            # Get Auth URL
             auth_url = auth_manager.get_authorize_url()
             
-            st.info("Please connect to Spotify to start.")
-            # Standard Streamlit Link Button is cleaner
-            st.link_button("👉 Connect Spotify", auth_url, type="primary")
+            st.link_button("👉 Log in with Spotify", auth_url, type="primary")
+            
+            # Debugging info
+            with st.expander("Troubleshoot"):
+                st.write(f"Redirect URI: `{st.secrets.get('REDIRECT_URI')}`")
+                st.write("Ensure this matches your Spotify Dashboard exactly.")
 
         st.divider()
         st.markdown("### How to Vote\n1. Generate Playlists\n2. Listen on Spotify\n3. Click 'Option A', 'B', or 'Tie'")
@@ -184,16 +191,16 @@ def render_input_area():
     
     col1, col2, col3 = st.columns([1, 1, 1])
     with col2:
-        # Check login status for button state
         is_logged_in = st.session_state.token_info is not None
-        
         if st.button("🎲 Generate", type="primary", disabled=not is_logged_in, use_container_width=True):
             if not st.session_state.current_prompt.strip():
                 st.error("⚠️ Please enter a playlist description")
             else:
                 run_generation_logic()
 
-# ... (Include the rest of your functions: run_generation_logic, render_results, etc. unchanged) ...
+# ============================================================
+# LOGIC & RESULTS
+# ============================================================
 
 def run_generation_logic():
     if st.session_state.is_generating: return
@@ -204,12 +211,12 @@ def run_generation_logic():
     
     st.session_state.show_results = False
     st.session_state.vote_submitted = False
+    st.session_state.vote_success = False
     st.session_state.v1_results = None
     st.session_state.v2_results = None
     st.session_state.v1_error = None
     st.session_state.v2_error = None
     
-    # Run Pipelines
     with st.spinner("Generating Option A (API)..."):
         try:
             st.session_state.v1_results = run_pipeline_v1(prompt, client_tools["search_requests"])
@@ -222,7 +229,6 @@ def run_generation_logic():
         except Exception as e:
             st.session_state.v2_error = str(e)
             
-    # Create Playlists
     if st.session_state.v1_results:
         st.session_state.playlist_a_url = create_playlist_wrapper("A", st.session_state.v1_results["track_ids"], client_tools["user_requests"])
     if st.session_state.v2_results:
@@ -231,8 +237,7 @@ def run_generation_logic():
     st.session_state.show_results = True
     st.session_state.is_generating = False
     st.rerun()
-    
-# ... (Include render_results, render_voting_buttons, save_vote_to_sheet, get_gsheet_client, create_playlist_wrapper) ...
+
 def get_gsheet_client():
     try:
         if "gcp_service_account" in st.secrets:
@@ -310,7 +315,7 @@ def main():
     
     init_session_state()
     
-    # 1. Handle OAuth First
+    # 1. Check for Login Code Immediately
     handle_oauth_callback()
     
     st.title("🎵 Promptify")
