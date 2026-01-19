@@ -25,7 +25,8 @@ load_dotenv()
 
 SHEET_ID = "1l-iMIcJhzhHIiFUqJFM6Dm1RgMYds4WEhrpl-XwZkWc"
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
-CREDENTIALS_PATH = json.loads(st.secrets.get("CREDENTIALS_PATH"), strict=False) or os.path.join(os.path.dirname(os.path.abspath(__file__)), "credentials.json")
+# Set local path fallback
+CREDENTIALS_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "credentials.json")
 
 # ============================================================
 # STATE MANAGEMENT
@@ -54,7 +55,7 @@ def init_session_state():
             st.session_state[key] = value
 
 # ============================================================
-# CLOUD AUTHENTICATION
+# CLOUD AUTHENTICATION (Spotify)
 # ============================================================
 
 def get_auth_manager():
@@ -107,68 +108,78 @@ def get_spotify_client():
     }
 
 # ============================================================
-# BACKEND SERVICES
+# BACKEND SERVICES (Google Sheets)
 # ============================================================
 
 def get_gsheet_client():
-    """Get authenticated Google Sheets client."""
+    """
+    Get authenticated Google Sheets client.
+    Prioritizes Streamlit Secrets -> Env Var JSON -> Local File.
+    """
     try:
-        # 1. Initialize creds dictionary
-        creds_dict = None
+        creds = None
         
-        # 2. Check Streamlit Secrets (Cloud)
-        if hasattr(st, "secrets"):
-            if "gcp_service_account" in st.secrets:
-                # Convert the AttrDict to a standard Python dict
+        # Option 1: Streamlit Cloud secrets (wrapped safely)
+        try:
+            if hasattr(st, 'secrets') and "gcp_service_account" in st.secrets:
                 creds_dict = dict(st.secrets["gcp_service_account"])
-            elif "gcp_json" in st.secrets:
-                # Parse the JSON string
-                creds_dict = json.loads(st.secrets["gcp_json"])
-
-        # 3. Check Local File (Fallback)
-        if not creds_dict and os.path.exists("credentials.json"):
-            creds_dict = json.load(open("credentials.json"))
-
-        # 4. Validate and Fix Private Key
-        if not creds_dict:
-            st.error("❌ Auth Error: No credentials found in Secrets or local file.")
+                creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
+        except Exception:
+            pass  # No secrets file, continue to other options
+        
+        # Option 2: Environment variable (JSON string)
+        if creds is None and os.getenv("GOOGLE_CREDENTIALS"):
+            creds_json = os.getenv("GOOGLE_CREDENTIALS")
+            creds_dict = json.loads(creds_json)
+            creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
+        
+        # Option 3: Local credentials file
+        if creds is None and os.path.exists(CREDENTIALS_PATH):
+            creds = Credentials.from_service_account_file(CREDENTIALS_PATH, scopes=SCOPES)
+        
+        if creds is None:
+            # Only show error if we are actually trying to vote
             return None
-            
-        # CRITICAL FIX: Handle newline characters in private key
-        if "private_key" in creds_dict:
-            creds_dict["private_key"] = creds_dict["private_key"].replace("\\n", "\n")
-
-        # 5. Authorize
-        creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
+        
         return gspread.authorize(creds)
 
+    except json.JSONDecodeError as e:
+        st.error(f"❌ Invalid JSON in GOOGLE_CREDENTIALS: {str(e)}")
+        return None
     except Exception as e:
-        st.error(f"❌ Connection Error: {e}")
+        st.error(f"❌ Failed to connect to Google Sheets: {str(e)}")
         return None
 
 def save_vote_to_sheet(vote_type):
     """Callback: Saves vote to Google Sheets."""
     client = get_gsheet_client()
     if not client:
+        st.error("❌ Google Sheets credentials not configured.")
         return
     
     try:
         sheet = client.open_by_key(SHEET_ID).sheet1
         
-        v1_ids = st.session_state.v1_results["track_ids"] if st.session_state.v1_results else []
-        v2_ids = st.session_state.v2_results["track_ids"] if st.session_state.v2_results else []
+        # Safe retrieval of list lengths
+        v1_len = len(st.session_state.v1_results["track_ids"]) if st.session_state.v1_results else 0
+        v2_len = len(st.session_state.v2_results["track_ids"]) if st.session_state.v2_results else 0
+        
+        # Create row data
+        v1_ids_str = ";".join(st.session_state.v1_results["track_ids"]) if st.session_state.v1_results else ""
+        v2_ids_str = ";".join(st.session_state.v2_results["track_ids"]) if st.session_state.v2_results else ""
 
         row = [
             datetime.now().isoformat(),
             st.session_state.current_prompt,
             vote_type,
-            len(v1_ids),
-            len(v2_ids),
-            ";".join(v1_ids),
-            ";".join(v2_ids)
+            v1_len,
+            v2_len,
+            v1_ids_str,
+            v2_ids_str
         ]
         sheet.append_row(row)
         
+        # Update State
         st.session_state.vote_success = True
         st.session_state.vote_submitted = True
         
