@@ -12,6 +12,7 @@ import gspread
 from google.oauth2.service_account import Credentials
 
 # --- Local Imports ---
+# Ensure your project folder structure matches these imports
 from spotify.spotify_requests import UserRequests, SearchRequests
 from config.spotify_consts import SCOPE
 from pipelines import run_pipeline_v1, run_pipeline_v2
@@ -25,7 +26,6 @@ load_dotenv()
 
 SHEET_ID = "1l-iMIcJhzhHIiFUqJFM6Dm1RgMYds4WEhrpl-XwZkWc"
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
-CREDENTIALS_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "credentials.json")
 
 # ============================================================
 # STATE MANAGEMENT
@@ -54,7 +54,7 @@ def init_session_state():
             st.session_state[key] = value
 
 # ============================================================
-# CLOUD AUTHENTICATION
+# CLOUD AUTHENTICATION (SPOTIFY)
 # ============================================================
 
 def get_auth_manager():
@@ -67,7 +67,6 @@ def get_auth_manager():
     client_secret = st.secrets.get("SP_CLIENT_SECRET") or os.getenv("SP_CLIENT_SECRET")
     
     # 2. Get Redirect URI
-    # CRITICAL: This must match your deployed URL exactly in Secrets
     redirect_uri = st.secrets.get("REDIRECT_URI") or os.getenv("REDIRECT_URI")
     
     if not redirect_uri:
@@ -107,48 +106,44 @@ def get_spotify_client():
     }
 
 # ============================================================
-# BACKEND SERVICES
+# BACKEND SERVICES (GOOGLE SHEETS)
 # ============================================================
 
 def get_gsheet_client():
-    """Get authenticated Google Sheets client."""
+    """Get authenticated Google Sheets client (Robust Version)."""
     try:
-        creds = None
-        
-        # Option 1: Streamlit Cloud secrets (wrapped safely)
-        try:
-            if hasattr(st, 'secrets') and "gcp_service_account" in st.secrets:
-                creds_dict = dict(st.secrets["gcp_service_account"])
-                creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
-        except Exception:
-            pass  # No secrets file, continue to other options
-        
-        # Option 2: Environment variable (JSON string)
-        if creds is None and os.getenv("GOOGLE_CREDENTIALS"):
-            creds_json = os.getenv("GOOGLE_CREDENTIALS")
-            creds_dict = json.loads(creds_json)
+        # 1. Check Streamlit Secrets (TOML format)
+        # Matches: [gcp_service_account] in secrets.toml
+        if "gcp_service_account" in st.secrets:
+            creds_dict = dict(st.secrets["gcp_service_account"])
             creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
+            return gspread.authorize(creds)
         
-        # Option 3: Local credentials file
-        if creds is None and os.path.exists(CREDENTIALS_PATH):
-            creds = Credentials.from_service_account_file(CREDENTIALS_PATH, scopes=SCOPES)
+        # 2. Check Streamlit Secrets (JSON string format)
+        # Matches: gcp_json = '{"type":...}' in secrets.toml
+        elif "gcp_json" in st.secrets:
+            creds_dict = json.loads(st.secrets["gcp_json"])
+            creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
+            return gspread.authorize(creds)
         
-        if creds is None:
-            st.error(f"❌ Google Sheets credentials not found at: {CREDENTIALS_PATH}")
+        # 3. Check Local File (Fallback for local testing)
+        elif os.path.exists("credentials.json"):
+            creds = Credentials.from_service_account_file("credentials.json", scopes=SCOPES)
+            return gspread.authorize(creds)
+        
+        else:
             return None
-        
-        return gspread.authorize(creds)
-    except json.JSONDecodeError as e:
-        st.error(f"❌ Invalid JSON in GOOGLE_CREDENTIALS: {str(e)}")
-        return None
+
     except Exception as e:
-        st.error(f"❌ Failed to connect to Google Sheets: {str(e)}")
+        print(f"Auth Error: {e}") # Log to console
         return None
 
 def save_vote_to_sheet(vote_type):
-    """Callback: Saves vote to Google Sheets."""
+    """Callback: Saves vote to Google Sheets with Toast feedback."""
     client = get_gsheet_client()
+    
     if not client:
+        st.toast("❌ Database connection failed. Check secrets.", icon="⚠️")
         return
     
     try:
@@ -170,9 +165,10 @@ def save_vote_to_sheet(vote_type):
         
         st.session_state.vote_success = True
         st.session_state.vote_submitted = True
+        st.toast("Vote saved successfully!", icon="✅")
         
     except Exception as e:
-        st.error(f"❌ Failed to save vote: {str(e)}")
+        st.toast(f"❌ Failed to save vote: {str(e)}", icon="⚠️")
         st.session_state.vote_success = False
 
 def create_playlist_wrapper(option_name, track_ids, user_requests):
@@ -224,6 +220,7 @@ def render_sidebar():
                     code = query_params["code"]
                     token_info = auth_manager.get_access_token(code)
                     st.session_state.token_info = token_info
+                    # Clear query params to clean URL
                     st.query_params.clear()
                     st.rerun()
                 except Exception as e:
@@ -249,7 +246,6 @@ def render_input_area():
     col1, col2, col3 = st.columns([1, 1, 1])
     with col2:
         if st.button("🎲 Generate", type="primary", use_container_width=True):
-            # Validate on click instead of disabled prop
             if not st.session_state.token_info:
                 st.error("⚠️ Please login to Spotify first")
             elif not st.session_state.current_prompt.strip():
@@ -258,7 +254,7 @@ def render_input_area():
                 run_generation_logic()
 
 def run_generation_logic():
-    # Prevent double execution from st.rerun()
+    # Prevent double execution
     if st.session_state.is_generating:
         return
     st.session_state.is_generating = True
