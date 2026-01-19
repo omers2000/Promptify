@@ -3,7 +3,6 @@ Promptify - Music Recommendation Comparison App
 """
 
 import os
-import shutil
 from datetime import datetime
 import streamlit as st
 from dotenv import load_dotenv
@@ -13,7 +12,7 @@ from google.oauth2.service_account import Credentials
 # --- Direct Spotipy Imports (Bypassing local Auth wrapper to fix bugs) ---
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
-from spotipy.cache_handler import CacheFileHandler
+from spotipy.cache_handler import MemoryCacheHandler
 
 # --- Local Imports ---
 from spotify.spotify_requests import UserRequests, SearchRequests
@@ -60,7 +59,7 @@ def init_session_state():
 def get_auth_manager():
     """
     Creates a SpotifyOAuth manager directly using Spotipy.
-    We do NOT delete the cache here anymore.
+    Uses MemoryCacheHandler to avoid file-based caching issues on Streamlit Cloud.
     """
     client_id = st.secrets.get("SP_CLIENT_ID") or os.getenv("SP_CLIENT_ID")
     client_secret = st.secrets.get("SP_CLIENT_SECRET") or os.getenv("SP_CLIENT_SECRET")
@@ -70,15 +69,12 @@ def get_auth_manager():
         st.error("❌ Critical Error: REDIRECT_URI is missing from Secrets.")
         st.stop()
 
-    # Use a specific cache handler that we control
-    cache_handler = CacheFileHandler(cache_path=".spotify_cache")
-
     return SpotifyOAuth(
         client_id=client_id,
         client_secret=client_secret,
         redirect_uri=redirect_uri,
         scope=SCOPE,
-        cache_handler=cache_handler,
+        cache_handler=MemoryCacheHandler(),
         show_dialog=True
     )
 
@@ -88,8 +84,8 @@ def handle_oauth_callback():
         sp_oauth = get_auth_manager()
         try:
             code = st.query_params["code"]
-            # Step 1: Exchange code for token
-            token_info = sp_oauth.get_access_token(code)
+            # Step 1: Exchange code for token (check_cache=False forces fresh exchange)
+            token_info = sp_oauth.get_access_token(code, as_dict=True, check_cache=False)
             
             # Step 2: verify we got a token
             if token_info:
@@ -101,7 +97,10 @@ def handle_oauth_callback():
                 st.error("❌ Token Exchange Failed (Result was None)")
                 
         except Exception as e:
-            st.error(f"❌ Login Error: {e}")
+            import traceback
+            st.session_state["auth_error"] = f"{type(e).__name__}: {e}"
+            st.session_state["auth_traceback"] = traceback.format_exc()
+            st.error(f"❌ Login Error: {type(e).__name__}: {e}")
 
 def get_spotify_client():
     """Returns authenticated client or None."""
@@ -150,12 +149,11 @@ def render_sidebar():
                 st.success(f"Connected: **{profile['display_name']}**")
                 
                 if st.button("Log Out"):
-                    # 1. Clear Session
+                    # Clear Session (no file cache to delete with MemoryCacheHandler)
                     st.session_state.token_info = None
                     st.session_state.user_profile = None
-                    # 2. Delete Cache File (Only on Logout!)
-                    if os.path.exists(".spotify_cache"):
-                        os.remove(".spotify_cache")
+                    st.session_state.pop("auth_error", None)
+                    st.session_state.pop("auth_traceback", None)
                     st.rerun()
 
             except Exception:
@@ -174,6 +172,10 @@ def render_sidebar():
                 has_code = "code" in st.query_params
                 st.write(f"URL Code Present: {has_code}")
                 st.write(f"Session Token: {'✅ Set' if st.session_state.token_info else '❌ None'}")
+                if "auth_error" in st.session_state:
+                    st.error(f"Last Auth Error: {st.session_state['auth_error']}")
+                    if "auth_traceback" in st.session_state:
+                        st.code(st.session_state["auth_traceback"])
 
         st.divider()
         st.markdown("### How to Vote\n1. Generate Playlists\n2. Listen on Spotify\n3. Click 'Option A', 'B', or 'Tie'")
