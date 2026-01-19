@@ -144,14 +144,15 @@ def save_vote_to_sheet(vote_type):
         v1_ids = st.session_state.v1_results["track_ids"] if st.session_state.v1_results else []
         v2_ids = st.session_state.v2_results["track_ids"] if st.session_state.v2_results else []
 
+        voter_name = st.session_state.user_profile.get("display_name", "Unknown") if st.session_state.user_profile else "Unknown"
+        
         row = [
             datetime.now().isoformat(),
             st.session_state.current_prompt,
             vote_type,
             len(v1_ids),
             len(v2_ids),
-            ";".join(v1_ids),
-            ";".join(v2_ids)
+            voter_name
         ]
         sheet.append_row(row)
         
@@ -216,9 +217,9 @@ def render_sidebar():
                 except Exception as e:
                     st.error(f"Login failed: {e}")
             else:
-                # Show Auth Link
+                # Show Auth Link - use link_button to ensure same-tab navigation
                 auth_url = auth_manager.get_authorize_url()
-                st.markdown(f"[**Click here to Login with Spotify**]({auth_url})")
+                st.link_button("🔑 Login with Spotify", auth_url, use_container_width=True)
 
         st.divider()
         st.markdown("### How to Vote\n1. Generate Playlists\n2. Listen on Spotify\n3. Click 'Option A', 'B', or 'Tie'")
