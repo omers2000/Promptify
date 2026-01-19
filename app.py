@@ -12,7 +12,6 @@ import gspread
 from google.oauth2.service_account import Credentials
 
 # --- Local Imports ---
-# Ensure your project folder structure matches these imports
 from spotify.spotify_requests import UserRequests, SearchRequests
 from config.spotify_consts import SCOPE
 from pipelines import run_pipeline_v1, run_pipeline_v2
@@ -26,6 +25,7 @@ load_dotenv()
 
 SHEET_ID = "1l-iMIcJhzhHIiFUqJFM6Dm1RgMYds4WEhrpl-XwZkWc"
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
+CREDENTIALS_PATH = json.loads(st.secrets.get("CREDENTIALS_PATH"), strict=False) or os.path.join(os.path.dirname(os.path.abspath(__file__)), "credentials.json")
 
 # ============================================================
 # STATE MANAGEMENT
@@ -54,7 +54,7 @@ def init_session_state():
             st.session_state[key] = value
 
 # ============================================================
-# CLOUD AUTHENTICATION (SPOTIFY)
+# CLOUD AUTHENTICATION
 # ============================================================
 
 def get_auth_manager():
@@ -67,6 +67,7 @@ def get_auth_manager():
     client_secret = st.secrets.get("SP_CLIENT_SECRET") or os.getenv("SP_CLIENT_SECRET")
     
     # 2. Get Redirect URI
+    # CRITICAL: This must match your deployed URL exactly in Secrets
     redirect_uri = st.secrets.get("REDIRECT_URI") or os.getenv("REDIRECT_URI")
     
     if not redirect_uri:
@@ -106,43 +107,43 @@ def get_spotify_client():
     }
 
 # ============================================================
-# BACKEND SERVICES (GOOGLE SHEETS)
+# BACKEND SERVICES
 # ============================================================
 
 def get_gsheet_client():
-    """Get authenticated Google Sheets client with UI Error Logging."""
+    """Get authenticated Google Sheets client."""
     try:
-        # Priority 1: JSON String in Secrets (The fix we just applied)
-        if "gcp_json" in st.secrets:
-            # st.secrets returns a special object, force it to string then parse
-            json_str = st.secrets["gcp_json"]
-            creds_dict = json.loads(json_str)
-            creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
-            return gspread.authorize(creds)
-
-        # Priority 2: TOML Dictionary (Old method)
-        elif "gcp_service_account" in st.secrets:
+        creds_dict = None
+        
+        # 1. Try to load from Secrets (Standard TOML)
+        if "gcp_service_account" in st.secrets:
             creds_dict = dict(st.secrets["gcp_service_account"])
-            creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
-            return gspread.authorize(creds)
-            
-        else:
-            st.error("❌ Critical: 'gcp_json' or 'gcp_service_account' missing from Secrets.")
+        
+        # 2. Try to load from Secrets (JSON String fallback)
+        elif "gcp_json" in st.secrets:
+            creds_dict = json.loads(st.secrets["gcp_json"])
+
+        if not creds_dict:
+            st.error("❌ Secrets Error: Could not find 'gcp_service_account' or 'gcp_json' in secrets.")
             return None
 
-    except json.JSONDecodeError:
-        st.error("❌ Secrets Error: The 'gcp_json' secret is not valid JSON. Check for missing brackets.")
-        return None
+        # --- THE CRITICAL FIX ---
+        # Replace escaped newlines with actual newlines
+        if "private_key" in creds_dict:
+            creds_dict["private_key"] = creds_dict["private_key"].replace("\\n", "\n")
+
+        creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
+        return gspread.authorize(creds)
+
     except Exception as e:
-        st.error(f"❌ Connection Error: {str(e)}")
+        # Show the ACTUAL error message on screen so we can debug
+        st.error(f"❌ Connection Error: {e}") 
         return None
 
 def save_vote_to_sheet(vote_type):
-    """Callback: Saves vote to Google Sheets with Toast feedback."""
+    """Callback: Saves vote to Google Sheets."""
     client = get_gsheet_client()
-    
     if not client:
-        st.toast("❌ Database connection failed. Check secrets.", icon="⚠️")
         return
     
     try:
@@ -164,10 +165,9 @@ def save_vote_to_sheet(vote_type):
         
         st.session_state.vote_success = True
         st.session_state.vote_submitted = True
-        st.toast("Vote saved successfully!", icon="✅")
         
     except Exception as e:
-        st.toast(f"❌ Failed to save vote: {str(e)}", icon="⚠️")
+        st.error(f"❌ Failed to save vote: {str(e)}")
         st.session_state.vote_success = False
 
 def create_playlist_wrapper(option_name, track_ids, user_requests):
@@ -219,7 +219,6 @@ def render_sidebar():
                     code = query_params["code"]
                     token_info = auth_manager.get_access_token(code)
                     st.session_state.token_info = token_info
-                    # Clear query params to clean URL
                     st.query_params.clear()
                     st.rerun()
                 except Exception as e:
@@ -245,6 +244,7 @@ def render_input_area():
     col1, col2, col3 = st.columns([1, 1, 1])
     with col2:
         if st.button("🎲 Generate", type="primary", use_container_width=True):
+            # Validate on click instead of disabled prop
             if not st.session_state.token_info:
                 st.error("⚠️ Please login to Spotify first")
             elif not st.session_state.current_prompt.strip():
@@ -253,7 +253,7 @@ def render_input_area():
                 run_generation_logic()
 
 def run_generation_logic():
-    # Prevent double execution
+    # Prevent double execution from st.rerun()
     if st.session_state.is_generating:
         return
     st.session_state.is_generating = True
