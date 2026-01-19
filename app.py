@@ -12,9 +12,8 @@ import gspread
 from google.oauth2.service_account import Credentials
 
 # --- Local Imports ---
-# Ensure these files exist in your project structure
 from spotify.spotify_requests import UserRequests, SearchRequests
-from config.spotify_consts import REDIRECT_URI, SCOPE
+from config.spotify_consts import SCOPE  # Only import SCOPE, REDIRECT_URI comes from secrets
 from pipelines import run_pipeline_v1, run_pipeline_v2
 from spotify.auth import Auth
 
@@ -134,42 +133,27 @@ def create_playlist_wrapper(option_name, track_ids, user_requests):
         st.warning(f"Could not create playlist for Option {option_name}: {e}")
         return None
 
-def get_spotify_client(username):
-    """Authenticates with Spotify."""
-    if st.session_state.spotify_auth and st.session_state.spotify_auth.get("username") == username:
-        return st.session_state.spotify_auth
-
-    client_id = os.getenv("SP_CLIENT_ID")
-    client_secret = os.getenv("SP_CLIENT_SECRET")
+def show_spotify_login():
+    """Shows Spotify login button if not authenticated."""
+    # Fetch from Streamlit secrets first, fall back to env vars
+    client_id = st.secrets.get("SP_CLIENT_ID") or os.getenv("SP_CLIENT_ID")
+    client_secret = st.secrets.get("SP_CLIENT_SECRET") or os.getenv("SP_CLIENT_SECRET")
+    redirect_uri = st.secrets.get("REDIRECT_URI") or os.getenv("REDIRECT_URI")
     
     if not client_id or not client_secret:
-        st.error("Missing Spotify credentials in .env")
-        return None
+        st.error("Missing Spotify credentials (SP_CLIENT_ID / SP_CLIENT_SECRET)")
+        return
     
-    cache_path = f".spotify_cache_{username}"
+    if not redirect_uri:
+        st.error("Missing REDIRECT_URI in secrets or environment")
+        return
     
     try:
-        auth_obj = Auth(client_id, client_secret, REDIRECT_URI, SCOPE, cache_path)
-        spotify = auth_obj.get_client()
-        user_requests = UserRequests(spotify)
-        search_requests = SearchRequests(spotify)
-        profile = user_requests.get_profile()
-        
-        auth_data = {
-            "username": username,
-            "spotify": spotify,
-            "user_requests": user_requests,
-            "search_requests": search_requests,
-            "profile": profile
-        }
-        st.session_state.spotify_auth = auth_data
-        return auth_data
+        auth_obj = Auth(client_id, client_secret, redirect_uri, SCOPE)
+        auth_url = auth_obj.auth_manager.get_authorize_url()
+        st.link_button("🔗 Connect to Spotify", auth_url, type="primary")
     except Exception as e:
-        st.error(f"Authentication failed: {str(e)}")
-        if os.path.exists(cache_path):
-            os.remove(cache_path)
-            st.warning("Cache cleared. Please try again.")
-        return None
+        st.error(f"Auth setup failed: {str(e)}")
 
 # ============================================================
 # UI COMPONENTS
@@ -178,12 +162,18 @@ def get_spotify_client(username):
 def render_sidebar():
     with st.sidebar:
         st.header("🔐 Spotify Auth")
-        username = st.text_input("Username", placeholder="Enter Spotify username")
         
-        if username:
-            auth_data = get_spotify_client(username)
-            if auth_data:
-                st.success(f"Connected: **{auth_data['profile']['display_name']}**")
+        if st.session_state.spotify_auth:
+            # Already logged in
+            profile = st.session_state.spotify_auth["profile"]
+            st.success(f"Connected: **{profile['display_name']}**")
+            
+            if st.button("Log Out"):
+                st.session_state.spotify_auth = None
+                st.rerun()
+        else:
+            # Not logged in - show connect button
+            show_spotify_login()
         
         st.divider()
         st.markdown("### How to Vote\n1. Generate Playlists\n2. Listen on Spotify\n3. Click 'Option A', 'B', or 'Tie'")
@@ -318,9 +308,46 @@ def render_voting_buttons():
 # MAIN APP
 # ============================================================
 
+def handle_oauth_callback():
+    """Handle OAuth callback if code is present in URL."""
+    if "code" in st.query_params and not st.session_state.spotify_auth:
+        # Fetch credentials
+        client_id = st.secrets.get("SP_CLIENT_ID") or os.getenv("SP_CLIENT_ID")
+        client_secret = st.secrets.get("SP_CLIENT_SECRET") or os.getenv("SP_CLIENT_SECRET")
+        redirect_uri = st.secrets.get("REDIRECT_URI") or os.getenv("REDIRECT_URI")
+        
+        if client_id and client_secret and redirect_uri:
+            try:
+                auth_obj = Auth(client_id, client_secret, redirect_uri, SCOPE)
+                code = st.query_params["code"]
+                token_info = auth_obj.auth_manager.get_access_token(code, as_dict=True, check_cache=False)
+                
+                if token_info:
+                    spotify = auth_obj.get_client(token_info["access_token"])
+                    user_requests = UserRequests(spotify)
+                    search_requests = SearchRequests(spotify)
+                    profile = user_requests.get_profile()
+                    
+                    st.session_state.spotify_auth = {
+                        "username": profile.get("id", "user"),
+                        "spotify": spotify,
+                        "user_requests": user_requests,
+                        "search_requests": search_requests,
+                        "profile": profile,
+                        "token_info": token_info
+                    }
+                    st.query_params.clear()
+                    st.rerun()
+            except Exception as e:
+                st.error(f"OAuth Error: {e}")
+                st.query_params.clear()
+
 def main():
     st.set_page_config(page_title="Promptify", page_icon="🎵", layout="wide")
     init_session_state()
+    
+    # Handle OAuth callback first
+    handle_oauth_callback()
     
     st.title("🎵 Promptify")
     render_sidebar()
