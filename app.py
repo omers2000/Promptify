@@ -110,32 +110,31 @@ def get_spotify_client():
 # ============================================================
 
 def get_gsheet_client():
-    """Get authenticated Google Sheets client (Robust Version)."""
+    """Get authenticated Google Sheets client with UI Error Logging."""
     try:
-        # 1. Check Streamlit Secrets (TOML format)
-        # Matches: [gcp_service_account] in secrets.toml
-        if "gcp_service_account" in st.secrets:
+        # Priority 1: JSON String in Secrets (The fix we just applied)
+        if "gcp_json" in st.secrets:
+            # st.secrets returns a special object, force it to string then parse
+            json_str = st.secrets["gcp_json"]
+            creds_dict = json.loads(json_str)
+            creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
+            return gspread.authorize(creds)
+
+        # Priority 2: TOML Dictionary (Old method)
+        elif "gcp_service_account" in st.secrets:
             creds_dict = dict(st.secrets["gcp_service_account"])
             creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
             return gspread.authorize(creds)
-        
-        # 2. Check Streamlit Secrets (JSON string format)
-        # Matches: gcp_json = '{"type":...}' in secrets.toml
-        elif "gcp_json" in st.secrets:
-            creds_dict = json.loads(st.secrets["gcp_json"])
-            creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
-            return gspread.authorize(creds)
-        
-        # 3. Check Local File (Fallback for local testing)
-        elif os.path.exists("credentials.json"):
-            creds = Credentials.from_service_account_file("credentials.json", scopes=SCOPES)
-            return gspread.authorize(creds)
-        
+            
         else:
+            st.error("❌ Critical: 'gcp_json' or 'gcp_service_account' missing from Secrets.")
             return None
 
+    except json.JSONDecodeError:
+        st.error("❌ Secrets Error: The 'gcp_json' secret is not valid JSON. Check for missing brackets.")
+        return None
     except Exception as e:
-        print(f"Auth Error: {e}") # Log to console
+        st.error(f"❌ Connection Error: {str(e)}")
         return None
 
 def save_vote_to_sheet(vote_type):
