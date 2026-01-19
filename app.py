@@ -7,6 +7,7 @@ import os
 import json
 import time
 from datetime import datetime
+from zoneinfo import ZoneInfo
 import streamlit as st
 from dotenv import load_dotenv
 import gspread
@@ -170,7 +171,7 @@ def save_vote_to_sheet(vote_type):
 
 def create_playlist_wrapper(option_name, track_ids, user_requests):
     try:
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
+        timestamp = datetime.now(ZoneInfo("Asia/Jerusalem")).strftime("%d/%m/%Y %H:%M")
         playlist_name = f"Promptify Option {option_name} - {timestamp}"
         playlist = user_requests.create_playlist(name=playlist_name, songs=track_ids)
         return playlist.get("external_urls", {}).get("spotify")
