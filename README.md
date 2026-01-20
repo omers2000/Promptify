@@ -82,10 +82,13 @@ graph TD
 ```
 
 ### Technologies
-* **LLM:** Google Gemini (פירוט קצר למה נבחר – חלון קונטקסט, עלויות, יכולות JSON וכו').
+* **LLM:** Google Gemini
+בחרנו בו לאחר שכלול של יכולות המודל, הנגישות שלו והנוחות שלו בהתממשקות ליתר הרכיבים של הפרוייקט
+
+ (פירוט קצר למה נבחר – חלון קונטקסט, עלויות, יכולות JSON וכו').
 * **Backend:** Python.
 * **Music Data:** Spotify Web API (Spotipy).
-* **Frontend:** Streamlit (ממשק משתמש).
+* **Frontend:** Streamlit (UI).
 
 ---
 
@@ -148,25 +151,22 @@ graph TD
 
 ---
 
-## 8. Installation & Usage
-1.  Clone the repository:
+## Installation & Usage
+1.  Browse to this URL:
     ```bash
-    git clone [https://github.com/username/promptify.git](https://github.com/username/promptify.git)
+    https://promptify-nlanmqgwehn5zr59dwxhlf.streamlit.app/
     ```
-2.  Install dependencies:
-    ```bash
-    pip install -r requirements.txt
-    ```
-3.  Set up API Keys:
-    * Create `.env` file with `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET`, `GEMINI_API_KEY`.
-4.  Run the app:
-    ```bash
-    streamlit run app.py
-    ```
+2.  Press the 'Login with Spotify' buttom
+    
+3.  Sign in to your Spotify account and allow the permissions
+
+4.  Enter your playlist description and press 'Generate'
+
+5.  Listen to both playlist in your Spotify account and choose which one is better matched your description
 
 ---
 
-## 9. References
-* Spotify Web API Documentation.
-* Google Gemini API Documentation.
-* [מאמרים או מקורות נוספים שהשתמשתם בהם].
+## References
+* https://developer.spotify.com/documentation/web-api - Spotify Web API Documentation.
+* https://ai.google.dev/gemini-api/docs - Google Gemini API Documentation.
+* https://reccobeats.com/docs/documentation/introduction - ReccoBeats API Documentation
