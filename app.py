@@ -234,9 +234,10 @@ def render_input_area():
     st.header("📝 Describe Your Playlist")
     
     prompt = st.text_area(
-        "Mood / Genre / Vibe:", 
+        "Describe the mood, vibe, or purpose of your playlist:", 
         value=st.session_state.current_prompt,
-        height=100
+        height=100,
+        placeholder="How do you want to feel? What's the occasion or activity?"
     )
     st.session_state.current_prompt = prompt
     
