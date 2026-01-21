@@ -317,8 +317,6 @@ def render_results():
         elif st.session_state.v1_results:
             if st.session_state.playlist_a_url:
                 st.link_button("🔗 Open Playlist A", st.session_state.playlist_a_url, use_container_width=True)
-            with st.expander("Show Tracks"):
-                st.write(st.session_state.v1_results["track_ids"])
 
     # Option B
     with col2:
@@ -328,8 +326,6 @@ def render_results():
         elif st.session_state.v2_results:
             if st.session_state.playlist_b_url:
                 st.link_button("🔗 Open Playlist B", st.session_state.playlist_b_url, use_container_width=True)
-            with st.expander("Show Tracks"):
-                st.write(st.session_state.v2_results["track_ids"])
 
     if st.session_state.v1_results and st.session_state.v2_results:
         render_voting_buttons()
