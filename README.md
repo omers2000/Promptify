@@ -2,7 +2,7 @@
 **Daniel Laroz and Omer Shapira**
 
 ## Live Demo
-[https://promptify-nlanmqgwehn5zr59dwxhlf.streamlit.app/](https://promptify-nlanmqgwehn5zr59dwxhlf.streamlit.app/)
+[https://promptify-nlanmqgwehn5zr59dwxhlf.streamlit.app/](https://promptify-nlanmqgwehn5zr59dwxhlf.streamlit.app)
 
 ---
 
