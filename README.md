@@ -19,9 +19,9 @@
      
 3. [Methods & Approaches](#Methods-&-Approaches)
     - [Prompt Engineering Challenge](#Prompt-Engineering-Challenge)
-    - [Pipeline A: API-Based Recommendations (ReccoBeats)](#Pipeline-A-:-API-Based-Recommendations-(ReccoBeats))
-    - [Pipeline B: Local Database Search](#Pipeline-B-:-Local-Database-Search)
-    - [Search Algorithm: Weighted Euclidean Distance](#Search-Algorithm-:-Weighted-Euclidean-Distance)
+    - [Pipeline A: API-Based Recommendations (ReccoBeats)](#Pipeline-A-API-Based-Recommendations-(ReccoBeats))
+    - [Pipeline B: Local Database Search](#Pipeline-B-Local-Database-Search)
+    - [Search Algorithm: Weighted Euclidean Distance](#Search-Algorithm-Weighted-Euclidean-Distance)
     - [Data Preprocessing](#Data-Preprocessing)
    
 4. [Experimental Setup](#Experimental-Setup)
