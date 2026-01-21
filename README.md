@@ -18,16 +18,35 @@
     - [Technologies](#Technologies)
      
 3. [Methods & Approaches](#Methods-&-Approaches)
+    - [The Core Challenge: Prompt Engineering](#The-Core-Challenge:-Prompt-Engineering)
+    - [Pipeline A: API-Based Recommendations (ReccoBeats)](#Pipeline-A:-API-Based-Recommendations-(ReccoBeats))
+    - [Pipeline B: Local Database Search](#Pipeline-B:-Local-Database-Search)
+    - [Search Algorithm: Weighted Euclidean Distance](#Search-Algorithm:-Weighted-Euclidean-Distance)
+    - [Data Preprocessing](#Data-Preprocessing)
    
-4. [Experiments & Results](#Experiments-&-Results)
+4. [Experimental Setup](#Experimental-Setup)
+    - [Methodology](#Methodology)
+    - [Data Collection](#Data-Collection)
+    - [Test Prompts](#Test-Prompts)
+
+5. [Results](#Results)
    
-5. [Implementation & Demo](#Implementation-&-Demo)
+6. [Implementation & Demo](#Implementation-&-Demo)
+    - [User Interface](#User-Interface)
+    - [Technical Challenges & Solutions](#Technical-Challenges-&-Solutions)
+
+7. [Code Overview](#Code-Overview)
+    - [Project Structure](#Project-Structure)
+    - [Key Components](#Key-Components)
      
-6. [Conclusions](#Conclusions)
+8. [Conclusions](#Conclusions)
+    - [Preliminary Observations](#Preliminary-Observations)
+    - [Limitations](#Limitations)
+    - [Future Improvements](#Future-Improvements)
 
-7. [Installation & Usage](#Installation-&-Usage)
+9. [Installation & Usage](#Installation-&-Usage)
 
-8. [References](#References)
+10. [References](#References)
 
 ---
 
@@ -37,7 +56,7 @@ Promptify is a web-based music recommendation system that allows users to genera
 
 The system is designed around a comparative architecture: it utilizes two different recommendation pipelines to provide results. Users can then vote on which playlist better matches their intent, enabling a data-driven comparison of different recommendation approaches.
 
-## Background and Motivation
+### Background and Motivation
 
 Human musical desires are frequently expressed through abstract concepts involving atmosphere or vibes. However, standard search mechanisms often rely on specific artist names, track titles, or distinct genres. These traditional methods can struggle to interpret semantic nuances, making it difficult to map abstract descriptions to appropriate musical content.
 
@@ -85,7 +104,7 @@ graph TD
 | Component | Technology | Rationale |
 |-----------|------------|-----------|
 | **LLM** | Google Gemini 2.5 Flash Lite | Structured JSON output, fast inference, cost-effective |
-| **Backend** | Python 3.11+ | Rich ecosystem for data science and API integration |
+| **Backend** | Python | Rich ecosystem for data science and API integration |
 | **Music Data API** | ReccoBeats API | Provides recommendation endpoints with audio feature filtering |
 | **Music Integration** | Spotify Web API (Spotipy) | Industry standard, rich metadata, playlist creation |
 | **Local Database** | Parquet (PyArrow) | Columnar storage, fast vectorized operations with NumPy |
@@ -358,29 +377,37 @@ Both playlists are displayed side-by-side with links to listen on Spotify. Users
 Promptify/
 ├── app.py                      # Main Streamlit application
 ├── requirements.txt            # Python dependencies
+|
 ├── config/
 │   ├── model_consts.py         # Feature order, playlist length, etc.
 │   ├── rb_consts.py            # ReccoBeats API configuration
 │   └── spotify_consts.py       # Spotify OAuth scopes
+|
 ├── data_class/
 │   └── recommendation_params.py # Pydantic models for Gemini schemas
+|
 ├── llm/
 │   └── llm_prompt_interpreter.py # Gemini API integration
+|
 ├── pipelines/
 │   ├── __init__.py             # Exports run_pipeline_v1, run_pipeline_v2
 │   ├── api_pipeline.py         # Pipeline A: ReccoBeats-based
 │   ├── db_pipeline.py          # Pipeline B: Local database
 │   ├── search_engine.py        # Core similarity algorithms
 │   └── shared.py               # Shared utilities (Gemini interpretation)
+|
 ├── rb/
 │   ├── rb_functions.py         # ReccoBeats API functions
 │   └── request_sender.py       # HTTP request wrapper
+|
 ├── songs_DB/
 │   ├── preprocess.py           # Database preprocessing script
 │   └── tracks_db.parquet       # Pre-processed track database
+|
 ├── spotify/
 │   ├── auth.py                 # Spotify OAuth manager
 │   └── spotify_requests.py     # Spotify API wrapper classes
+|
 └── tests/
     ├── test_data_sync.py       # Database integrity tests
     ├── test_feature_alignment.py # Feature order consistency tests
@@ -434,7 +461,7 @@ Based on initial testing:
 - **Temporal Bias:** The database reflects a snapshot in time and doesn't include new releases.
 - **Popularity Data Gap:** ReccoBeats doesn't provide popularity scores, limiting that dimension for Pipeline A.
 
-### Future Work
+### Future Improvements
 
 1. **Feedback Loop:** Allow users to mark individual tracks as "liked" or "disliked" to refine results.
 2. **Hybrid Approach:** Combine both pipelines - use API for discovery, local DB for fine-tuning.
