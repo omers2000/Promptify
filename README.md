@@ -18,7 +18,7 @@
     - [Technologies](#Technologies)
      
 3. [Methods & Approaches](#Methods-&-Approaches)
-    - [The Core Challenge: Prompt Engineering](#The-Core-Challenge:-Prompt-Engineering)
+    - [Prompt Engineering Challenge](#Prompt-Engineering-Challenge)
     - [Pipeline A: API-Based Recommendations (ReccoBeats)](#Pipeline-A:-API-Based-Recommendations-(ReccoBeats))
     - [Pipeline B: Local Database Search](#Pipeline-B:-Local-Database-Search)
     - [Search Algorithm: Weighted Euclidean Distance](#Search-Algorithm:-Weighted-Euclidean-Distance)
@@ -115,7 +115,7 @@ graph TD
 
 ## Methods & Algorithms
 
-### The Core Challenge: Prompt Engineering
+### Prompt Engineering Challenge
 
 The first challenge is translating a user's abstract natural language prompt into quantifiable audio features. We use Google Gemini with structured output (Pydantic schemas) to ensure consistent, parseable responses.
 
@@ -134,7 +134,6 @@ The first challenge is translating a user's abstract natural language prompt int
 
 For each feature, Gemini also assigns an importance weight (0.0 to 1.0):
 - **1.0** = Critical constraint (must match closely)
-- **0.5** = Moderate preference
 - **0.0** = Irrelevant (ignore this feature)
 
 This allows the system to understand that "upbeat workout music" should heavily weight `energy` and `tempo`, while "chill background music" should prioritize `acousticness` and low `energy`.
@@ -174,18 +173,19 @@ def rank_candidates(candidates, target, weights):
 **Advantages:**
 - Leverages ReccoBeats' recommendation algorithm
 - Can discover tracks outside our local database
-- Seed songs guide the recommendation toward the user's taste
+- Seed songs guide the recommendation toward the user's intent
 
 **Disadvantages:**
 - Dependent on external API availability
-- Gemini may "hallucinate" non-existent songs
-- ReccoBeats lacks popularity data, limiting that dimension
+- ReccoBeats may occasionally recommends Track IDs that are not found on Spotify
+- ReccoBeats lacks the ability to set a hard filter on popularity
+- Pipeline's respone time is slower
 
 ---
 
 ### Pipeline B: Local Database Search
 
-**Description:** This pipeline performs a direct similarity search on a pre-processed local database of ~114,000 tracks using weighted Euclidean distance.
+**Description:** This pipeline performs a direct similarity search on a pre-processed local database of ~90,000 tracks using weighted Euclidean distance.
 
 **Process:**
 
@@ -194,7 +194,7 @@ def rank_candidates(candidates, target, weights):
    - Feature weights
    - **No seed songs required**
 
-2. **Database Search:** A vectorized NumPy operation calculates the weighted Euclidean distance between the target vector and all tracks in the database:
+2. **Database Search:** A NumPy operation calculates the weighted Euclidean distance between the target vector and all tracks in the database:
 
 ```python
 # Core Algorithm: Weighted Euclidean Distance
@@ -206,15 +206,14 @@ scores = weighted_diff.sum(axis=1)  # Lower = Better match
 
 3. **Result Selection:** The top 10 tracks with the lowest distance scores are selected.
 
-**Advantages:**
-- No external API dependency (offline-capable)
+**Advantages: (in recommendation phase)**
+- No external API dependency
 - Faster response times
 - Full control over the ranking algorithm
 - Consistent, reproducible results
 
 **Disadvantages:**
 - Limited to tracks in the local database
-- No collaborative filtering or trend awareness
 - Database requires periodic updates
 
 ---
@@ -223,7 +222,7 @@ scores = weighted_diff.sum(axis=1)  # Lower = Better match
 
 Both pipelines use the same core similarity metric:
 
-$$\text{Distance} = \sum_{i=1}^{n} w_i \cdot (x_i - t_i)^2$$
+$$\text{Distance Squared} = \sum_{i=1}^{n} w_i \cdot (x_i - t_i)^2$$
 
 Where:
 - $x_i$ = candidate track's feature value (normalized to 0-1)
@@ -236,7 +235,7 @@ Lower distance = better match.
 
 ### Data Preprocessing
 
-The local database is built from a CSV dataset containing Spotify track metadata and audio features. The preprocessing pipeline (`preprocess.py`) performs:
+The local database is built from a CSV dataset (from Kaggle) containing Spotify track metadata and audio features. The preprocessing pipeline (`preprocess.py`) performs:
 
 1. **Cleaning:** Remove rows with missing values, duplicates, or invalid durations
 2. **Normalization:** Scale all features to 0-1 range:
@@ -258,7 +257,7 @@ We designed an A/B testing framework where users generate playlists using both p
 - **Option B is Better** (Pipeline B wins)
 - **It's a Tie** (Both equally good)
 
-**Important:** Users are **not told** which pipeline corresponds to which option. The assignment is randomized to prevent bias.
+**Important:** Users are **not told** which pipeline corresponds to which option.
 
 ### Data Collection
 
@@ -364,7 +363,6 @@ Both playlists are displayed side-by-side with links to listen on Spotify. Users
 | **Gemini JSON Parsing Failures** | Implemented retry logic (3 attempts) with exponential backoff |
 | **Seed Song Hallucinations** | Validate each seed against Spotify Search API before use |
 | **Spotify Rate Limits** | Batch requests where possible, implement caching |
-| **OAuth Token Expiration** | Auto-refresh tokens using Spotipy's built-in mechanism |
 | **Large Database Search Performance** | NumPy vectorization + `argpartition` for O(n) top-k selection |
 
 ---
@@ -472,7 +470,7 @@ Based on initial testing:
 
 ---
 
-## Installation & Usage
+## Usage
 
 1. Navigate to this URL:
     ```bash
@@ -498,3 +496,4 @@ Based on initial testing:
 - [ReccoBeats API Documentation](https://reccobeats.com/docs/documentation/introduction)
 - [Streamlit Documentation](https://docs.streamlit.io/)
 - [Spotipy Library](https://spotipy.readthedocs.io/)
+- [Spotify songs DB](https://www.kaggle.com/datasets/maharshipandya/-spotify-tracks-dataset)
