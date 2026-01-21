@@ -14,6 +14,8 @@
    - [Research Question](#Research-Question)
      
 2. [System Design](#System-Design)
+    - [High-Level Architecture](#High-Level-Architecture)
+    - [Technologies](#Technologies)
      
 3. [Methods & Approaches](#Methods-&-Approaches)
    
@@ -423,9 +425,10 @@ Based on initial testing:
 
 ## Installation & Usage
 
-### Online (Recommended)
-
-1. Navigate to: [https://promptify-nlanmqgwehn5zr59dwxhlf.streamlit.app/](https://promptify-nlanmqgwehn5zr59dwxhlf.streamlit.app/)
+1. Navigate to this URL:
+    ```bash
+    https://promptify-nlanmqgwehn5zr59dwxhlf.streamlit.app
+    ```
 
 2. Click the **"Login with Spotify"** button in the sidebar
 
@@ -436,34 +439,6 @@ Based on initial testing:
 5. Click **"Generate"** and wait for both playlists to be created
 
 6. Listen to both playlists on Spotify and vote for the one that better matches your description
-
-### Local Development
-
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/your-repo/Promptify.git
-   cd Promptify
-   ```
-
-2. Create a virtual environment and install dependencies:
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   pip install -r requirements.txt
-   ```
-
-3. Set up environment variables (create a `.env` file):
-   ```env
-   SP_CLIENT_ID=your_spotify_client_id
-   SP_CLIENT_SECRET=your_spotify_client_secret
-   REDIRECT_URI=http://localhost:8501
-   GEMINI_KEY=your_google_gemini_api_key
-   ```
-
-4. Run the application:
-   ```bash
-   streamlit run app.py
-   ```
 
 ---
 
