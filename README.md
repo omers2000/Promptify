@@ -6,13 +6,37 @@
 
 ---
 
+## Table of Contents
+
+1. [Introduction](#Introduction)
+   - [Background and Motivation](#Background-and-Motivation)
+   - [Project Goals](#Project-Goals)
+   - [Research Question](#Research-Question)
+     
+2. [System Design](#System-Design)
+     
+3. [Methods & Approaches](#Methods-&-Approaches)
+   
+4. [Experiments & Results](#Experiments-&-Results)
+   
+5. [Implementation & Demo](#Implementation-&-Demo)
+     
+6. [Conclusions](#Conclusions)
+
+7. [Installation & Usage](#Installation-&-Usage)
+
+8. [References](#References)
+
+---
+
 ## Introduction
 
 Promptify is a web-based music recommendation system that allows users to generate Spotify playlists using natural language descriptions. Instead of manually searching for songs or relying on generic genre categories, users can describe their desired playlist in plain English—such as "energetic workout music with heavy beats" or "calm acoustic songs for studying"—and receive personalized recommendations.
 
 The core innovation of Promptify is its A/B testing architecture: the system simultaneously runs two different recommendation pipelines and presents users with both results. Users can then vote on which playlist better matches their intent, enabling data-driven comparison of recommendation approaches.
 
-### Background and Motivation
+
+## Background and Motivation
 
 Current music streaming platforms, such as Spotify, predominantly rely on metadata-based search mechanisms. Users are typically limited to querying by specific artist names, track titles, distinct genres, or a finite set of predefined tags. Consequently, finding a suitable playlist often requires a manual, exhaustive search process: users must browse through numerous suggested playlists, filtering them one by one to find a match that aligns with their preferences. This process imposes a significant cognitive load and consumes valuable time, often resulting in a compromise where the user settles for an imperfect playlist.
 
