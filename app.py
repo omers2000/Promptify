@@ -239,7 +239,7 @@ def render_input_area():
         height=100,
         placeholder="How do you want to feel? What's the occasion or activity?"
     )
-    st.info("💡 We recommend focusing on mood and vibe rather than specific genres or years.")
+    st.info("💡 We recommend focusing on mood and vibe rather than specific genres, years, or songs.")
     st.session_state.current_prompt = prompt
     
     col1, col2, col3 = st.columns([1, 1, 1])
