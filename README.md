@@ -33,26 +33,23 @@
 
 ## Introduction
 
-Promptify is a web-based music recommendation system that allows users to generate Spotify playlists using natural language descriptions. Instead of manually searching for songs or relying on generic genre categories, users can describe their desired playlist in plain English—such as "energetic workout music with heavy beats" or "calm acoustic songs for studying"—and receive personalized recommendations.
+Promptify is a web-based music recommendation system that allows users to generate Spotify playlists using natural language descriptions. Instead of manually searching for songs, users can describe their desired mood or activity in plain English—such as "energetic workout music with heavy beats" or "calm acoustic songs for studying"—and receive personalized recommendations.
 
-The core innovation of Promptify is its A/B testing architecture: the system simultaneously runs two different recommendation pipelines and presents users with both results. Users can then vote on which playlist better matches their intent, enabling data-driven comparison of recommendation approaches.
-
+The system is designed around a comparative architecture: it utilizes two different recommendation pipelines to provide results. Users can then vote on which playlist better matches their intent, enabling a data-driven comparison of different recommendation approaches.
 
 ## Background and Motivation
 
-Current music streaming platforms, such as Spotify, predominantly rely on metadata-based search mechanisms. Users are typically limited to querying by specific artist names, track titles, distinct genres, or a finite set of predefined tags. Consequently, finding a suitable playlist often requires a manual, exhaustive search process: users must browse through numerous suggested playlists, filtering them one by one to find a match that aligns with their preferences. This process imposes a significant cognitive load and consumes valuable time, often resulting in a compromise where the user settles for an imperfect playlist.
-
-Moreover, human musical desires are frequently expressed through abstract concepts involving "atmosphere," "vibes," or complex scenarios (e.g., "songs for a melancholic drive on a rainy night"). Existing keyword-based search algorithms struggle to interpret these semantic nuances, failing to map abstract descriptions to the appropriate musical content.
+Human musical desires are frequently expressed through abstract concepts involving atmosphere or vibes. However, standard search mechanisms often rely on specific artist names, track titles, or distinct genres. These traditional methods can struggle to interpret semantic nuances, making it difficult to map abstract descriptions to appropriate musical content.
 
 ### Project Goals
 
-The objective of "Promptify" is to automate the translation of abstract user intent into a concrete, curated list of tracks. The solution utilizes the advanced Natural Language Processing (NLP) capabilities of modern AI (Google Gemini) to analyze the user's free-text prompt. The system distills this text into quantifiable audio parameters and features, which serve as the foundation for the search and retrieval process.
+The objective of Promptify is to automate the translation of abstract user intent into a curated list of tracks. The solution utilizes the Natural Language Processing (NLP) capabilities of Google Gemini to analyze free-text prompts. The system distills this text into quantifiable audio parameters and features, which serve as the foundation for the search and retrieval process.
 
 ### Research Question
 
 **Which approach yields better playlist recommendations: an API-based method that leverages external recommendation algorithms, or a local database search using weighted similarity metrics?**
 
-Beyond the system implementation, this project focuses on a comparative study of two algorithmic approaches to playlist generation, evaluating their effectiveness through user feedback.
+Beyond the system implementation, this project focuses on a comparative study of these two algorithmic approaches, evaluating their effectiveness through gathered user feedback and runtime comparison.
 
 ---
 
