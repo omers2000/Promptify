@@ -44,7 +44,7 @@
     - [Limitations](#Limitations)
     - [Future Improvements](#Future-Improvements)
 
-9. [Installation & Usage](#Installation-&-Usage)
+9. [Usage](#Usage)
 
 10. [References](#References)
 
@@ -235,14 +235,99 @@ Lower distance = better match.
 
 ### Data Preprocessing
 
-The local database is built from a CSV dataset (from Kaggle) containing Spotify track metadata and audio features. The preprocessing pipeline (`preprocess.py`) performs:
+The local database is built from a CSV dataset ([Spotify Tracks Dataset on Kaggle](https://www.kaggle.com/datasets/maharshipandya/-spotify-tracks-dataset)) containing Spotify track metadata and audio features. The preprocessing pipeline (`songs_DB/preprocess.py`) transforms this raw data into an optimized format for fast similarity searches.
 
-1. **Cleaning:** Remove rows with missing values, duplicates, or invalid durations
-2. **Normalization:** Scale all features to 0-1 range:
-   - Tempo: divided by 250
-   - Popularity: divided by 100
-   - Other features: already in 0-1 range
-3. **Storage:** Save as Parquet format for efficient columnar access
+#### Step 1: Data Cleaning
+
+The raw dataset undergoes several cleaning operations to ensure data quality:
+
+```python
+# Remove rows with missing values in critical columns
+df = df.dropna(subset=['track_name', 'artists', 'track_id'] + FEATURE_ORDER)
+
+# Remove duplicate tracks (based on track_id)
+df = df.drop_duplicates(subset=['track_id'])
+
+# Filter out tracks with invalid durations
+df = df[(df['duration_ms'] >= 60000) & (df['duration_ms'] <= 900000)]  # 1-15 minutes
+
+# Filter out tracks with invalid tempo
+df = df[df['tempo'] > 0]
+```
+
+**Cleaning Rationale:**
+- **Duration filtering (1-15 min):** Excludes intros, interludes, and abnormally long tracks that don't represent typical songs
+- **Tempo validation:** Removes corrupted entries where BPM detection failed
+- **Deduplication:** Ensures each track appears exactly once in the database
+
+#### Step 2: Feature Normalization
+
+All audio features are normalized to a 0-1 range to ensure equal contribution during distance calculations:
+
+| Feature | Original Range | Normalization Method |
+|---------|----------------|---------------------|
+| `tempo` | 0-250+ BPM | `clip(0, 250) / 250` |
+| `popularity` | 0-100 | `clip(0, 100) / 100` |
+| `acousticness` | 0.0-1.0 | `clip(0, 1)` (already normalized) |
+| `danceability` | 0.0-1.0 | `clip(0, 1)` (already normalized) |
+| `energy` | 0.0-1.0 | `clip(0, 1)` (already normalized) |
+| `valence` | 0.0-1.0 | `clip(0, 1)` (already normalized) |
+
+```python
+def normalize_column(df, col_name):
+    if col_name == 'tempo':
+        return df[col_name].clip(0, 250) / 250.0
+    elif col_name == 'popularity':
+        return df[col_name].clip(0, 100) / 100.0
+    return df[col_name].clip(0, 1)  # Safety clamp for already-normalized features
+```
+
+#### Step 3: Feature Ordering Invariant
+
+A critical design constraint is the **strict feature ordering** defined in `config/model_consts.py`:
+
+```python
+FEATURE_ORDER = [
+    'acousticness',
+    'danceability', 
+    'energy', 
+    'tempo',
+    'valence',  
+    'popularity'
+]
+```
+
+This ordering is enforced across the entire codebase:
+- **Preprocessing:** Features are stored in this exact order
+- **Gemini Output:** Pydantic schemas output values in this order
+- **Search Engine:** NumPy arrays expect this column order
+
+**Why this matters:** The weighted Euclidean distance calculation uses vectorized NumPy operations where feature positions must match between the target vector (from Gemini) and the database matrix.
+
+#### Step 4: Unified Storage
+
+The final database combines metadata and normalized features into a single Parquet file:
+
+```python
+# Metadata columns preserved for display
+meta_columns = ['track_id', 'track_name', 'artists', 'album_name', 'track_genre']
+
+# Combine metadata + normalized features
+final_db = pd.concat([df[meta_columns], features_df], axis=1)
+
+# Save as Parquet for efficient columnar access
+final_db.to_parquet('tracks_db.parquet', engine='pyarrow', index=False)
+```
+
+**Storage Format Benefits:**
+- **Parquet columnar format:** Enables fast loading of only the feature columns needed for search
+- **PyArrow engine:** Provides efficient memory mapping and vectorized operations
+- **Single file:** Maintains row alignment invariant between metadata and features
+
+**Database Statistics:**
+- Final size: ~90,000 tracks after cleaning
+- File format: Apache Parquet
+- Feature precision: float32 (memory-efficient while preserving accuracy)
 
 ---
 
