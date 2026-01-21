@@ -1,5 +1,5 @@
-# Promptify: AI-Powered Playlist Generation
-**Daniel Laroz and Omer Shapira**
+# Promptify: AI-Powered Playlist Generation 🎵
+### **Authors: Daniel Laroz and Omer Shapira**
 
 ## Live Demo
 [https://promptify-nlanmqgwehn5zr59dwxhlf.streamlit.app](https://promptify-nlanmqgwehn5zr59dwxhlf.streamlit.app)
@@ -145,6 +145,16 @@ This allows the system to understand that "upbeat workout music" should heavily 
 
 4. **Re-Ranking:** The 40 candidates are ranked using **Weighted Euclidean Distance** against the target features. The top 10 tracks are selected.
 
+```python
+# Core ranking algorithm (simplified)
+def rank_candidates(candidates, target, weights):
+    scores = []
+    for track in candidates:
+        distance = sum(w * (track[f] - target[f])**2 for f, w in zip(features, weights))
+        scores.append((track, distance))
+    return sorted(scores, key=lambda x: x[1])
+```
+
 **Advantages:**
 - Leverages ReccoBeats' recommendation algorithm
 - Can discover tracks outside our local database
@@ -190,6 +200,21 @@ scores = weighted_diff.sum(axis=1)  # Lower = Better match
 - Limited to tracks in the local database
 - No collaborative filtering or trend awareness
 - Database requires periodic updates
+
+---
+
+### Search Algorithm: Weighted Euclidean Distance
+
+Both pipelines use the same core similarity metric:
+
+$$\text{Distance} = \sum_{i=1}^{n} w_i \cdot (x_i - t_i)^2$$
+
+Where:
+- $x_i$ = candidate track's feature value (normalized to 0-1)
+- $t_i$ = target feature value
+- $w_i$ = feature weight (0.0 = ignore, 1.0 = critical)
+
+Lower distance = better match.
 
 ---
 
