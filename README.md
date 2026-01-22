@@ -464,7 +464,7 @@ Handles communication with Google Gemini API:
 Contains the core similarity algorithms:
 - `_calculate_weighted_distance()`: Vectorized weighted Euclidean distance using NumPy
 - `rank_reccobeats_candidates()`: Re-ranks API results (for Pipeline A)
-- `search_db()`: Searches the local Parquet database using `argpartition` for O(n) top-k selection (for Pipeline B)
+- `search_db()`: Searches the local database using `argpartition` for efficient top-k selection (for Pipeline B)
 
 **`data_class/recommendation_params.py`**
 
