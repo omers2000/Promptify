@@ -441,7 +441,7 @@ Promptify/
 |
 ├── songs_DB/
 │   ├── preprocess.py           # Database preprocessing script
-│   └── tracks_db.parquet       # Pre-processed track database
+│   └── tracks_db.parquet       # Processed track database
 |
 ├── spotify/
 │   ├── auth.py                 # Spotify OAuth manager
