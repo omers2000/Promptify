@@ -33,7 +33,6 @@
    
 6. [Implementation & Demo](#implementation--demo)
     - [User Interface](#user-interface)
-    - [Technical Challenges & Solutions](#technical-challenges--solutions)
 
 7. [Code Overview](#Code-Overview)
     - [Project Structure](#Project-Structure)
@@ -438,15 +437,6 @@ Both playlists are displayed side-by-side with links to listen on Spotify. Users
 
 ![Results Screenshot](https://github.com/omers2000/Promptify/blob/daniel_report_2/images/result_screen.jpeg)
 
-### Technical Challenges & Solutions
-
-| Challenge | Solution |
-|-----------|----------|
-| **Gemini JSON Parsing Failures** | Implemented retry logic (3 attempts) with exponential backoff |
-| **Seed Song Hallucinations** | Validate each seed against Spotify Search API before use |
-| **Spotify Rate Limits** | Batch requests where possible, implement caching |
-| **Large Database Search Performance** | NumPy vectorization + `argpartition` for O(n) top-k selection |
-
 ---
 
 ## Code Overview
@@ -501,14 +491,14 @@ Promptify/
 Handles communication with Google Gemini API:
 - Constructs system prompts based on the target pipeline
 - Enforces structured JSON output using Pydantic schemas
-- Implements retry logic for failed generations
+- Implements retry logic (3 attempts) with exponential backoff for failed generations
 
 **`pipelines/search_engine.py`**
 
 Contains the core similarity algorithms:
-- `_calculate_weighted_distance()`: Vectorized weighted Euclidean distance
+- `_calculate_weighted_distance()`: Vectorized weighted Euclidean distance using NumPy
 - `rank_reccobeats_candidates()`: Re-ranks API results (for Pipeline A)
-- `search_db()`: Searches the local Parquet database (for Pipeline B)
+- `search_db()`: Searches the local Parquet database using `argpartition` for O(n) top-k selection (for Pipeline B)
 
 **`data_class/recommendation_params.py`**
 
