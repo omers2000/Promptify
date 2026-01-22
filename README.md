@@ -424,21 +424,21 @@ The Streamlit application provides a clean, intuitive interface:
 
 Users authenticate with their Spotify account via OAuth 2.0 to enable playlist creation.
 
-![Login Screenshot](docs/images/login.png)
+![Login Screenshot](https://github.com/omers2000/Promptify/blob/daniel_report_2/images/login_screen.png)
 *Screenshot placeholder: Spotify login button in sidebar*
 
 **2. Prompt Input**
 
 Users enter a free-text description of their desired playlist.
 
-![Input Screenshot](docs/images/input.png)
+![Input Screenshot](https://github.com/omers2000/Promptify/blob/daniel_report_2/images/input_screen.png)
 *Screenshot placeholder: Text area for playlist description*
 
 **3. Results & Voting**
 
 Both playlists are displayed side-by-side with links to listen on Spotify. Users vote for their preferred option.
 
-![Results Screenshot](docs/images/results.png)
+![Results Screenshot](https://github.com/omers2000/Promptify/blob/daniel_report_2/images/result_screen.jpeg)
 *Screenshot placeholder: Two playlist options with voting buttons*
 
 ### Technical Challenges & Solutions
