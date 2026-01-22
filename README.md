@@ -104,7 +104,7 @@ graph TD
 | Component | Technology | Rationale |
 |-----------|------------|-----------|
 | **LLM** | Google Gemini 2.5 Flash Lite | Structured output and fast inference |
-| **Backend** | Python | Rich ecosystem for data science and API integration |
+| **Backend** | Python | Ease of development with libraries suited for the project (NumPy, Pandas, API clients) |
 | **Music Data API** | ReccoBeats API | Provides recommendation endpoints with audio feature filtering |
 | **Music Integration** | Spotify Web API (Spotipy) | Industry standard, rich metadata, playlist creation |
 | **Local Database** | Parquet (PyArrow) | Columnar storage, fast vectorized operations with NumPy |
