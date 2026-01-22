@@ -212,8 +212,8 @@ scores = weighted_diff.sum(axis=1)  # Lower = Better match
 - Consistent, reproducible results
 
 **Disadvantages:**
-- Limited to tracks in the local database
-- Database requires periodic updates
+- Limited to tracks in the local database (~90K tracks vs Spotify's [100M+](https://newsroom.spotify.com/company-info/))
+- Database reflects a snapshot in time and doesn't include new releases
 
 ---
 
