@@ -537,16 +537,33 @@ Based on initial testing:
 
 ### Limitations
 
-- **Database Size:** The local database (~114K tracks) is smaller than Spotify's full catalog (100M+ tracks).
+**Data & Coverage:**
+- **Database Size:** The local database (~90K tracks) is smaller than Spotify's full catalog ([100M+ tracks](https://newsroom.spotify.com/company-info/)).
 - **Temporal Bias:** The database reflects a snapshot in time and doesn't include new releases.
-- **Popularity Data Gap:** ReccoBeats doesn't provide popularity scores, limiting that dimension for Pipeline A.
+
+**ReccoBeats API:**
+- **Third-Party Replication:** ReccoBeats attempts to replicate Spotify's now-deprecated Recommendations API, but without access to Spotify's proprietary algorithms and real-time data, recommendation quality may not match the original.
+- **Popularity Verification Gap:** While recommendations can target a desired popularity level, the audio features endpoint doesn't return popularity scores—so Pipeline A can aim for popularity but cannot verify or filter results by it.
+- **No Genre Filtering:** ReccoBeats doesn't support filtering recommendations by genre, limiting control over stylistic output.
+- **Stale Track IDs:** ReccoBeats occasionally returns track IDs that no longer exist on Spotify, requiring fallback handling.
+
+**Evaluation Challenges:**
+- **Subjective Success Criteria:** Translating abstract prompts (e.g., "songs that feel like a sunset") into numerical audio features is inherently subjective. What constitutes a "good" recommendation varies, making objective evaluation of system performance difficult.
+
+**Platform Constraints:**
+- **Spotify Developer Quota:** The app operates in Spotify's development mode, which limits access to a small number of pre-approved users.
 
 ### Future Improvements
 
-1. **Feedback Loop:** Allow users to mark individual tracks as "liked" or "disliked" to refine results.
-2. **Hybrid Approach:** Combine both pipelines - use API for discovery, local DB for fine-tuning.
-3. **Image Input:** Accept album art or mood board images as input using multimodal LLMs.
-4. **Larger Database:** Integrate with Spotify's full catalog through their Recommendations API.
+1. **Expanded Audio Features:** Add more audio dimensions such as `instrumentalness` (useful for study/focus playlists), `speechiness` (filter spoken word), and `liveness` (prefer studio vs live recordings).
+2. **Metadata Filtering in Pipeline B:** Leverage existing database metadata (e.g., `track_genre`, `explicit`) to infer user intent from prompts more accurately. This would allow users to naturally request specific genres, avoid explicit content, or set duration preferences—enabling truly free-form input like "relaxing jazz for a coffee shop."
+3. **Negative Seeds:** Leverage ReccoBeats' negative seeds parameter in Pipeline A to let users specify styles to avoid (e.g., "energetic music but NOT electronic").
+4. **Personalization:** Integrate with user's Spotify listening history and saved tracks for personalized recommendations.
+5. **Larger Database:** Expand the local database or integrate with additional music data sources.
+6. **Feedback Loop:** Allow users to mark individual tracks as "liked" or "disliked" to refine results.
+7. **Playlist Length Customization:** Allow users to specify how many tracks they want instead of a fixed playlist size.
+8. **Mood Transitions:** Support dynamic prompts like "start calm and build to energetic" by ordering tracks to create a progression throughout the playlist.
+9. **Musician Mode:** Expose technical audio features (`key`, `mode`, `time_signature`) for musically-inclined users who want precise control over harmonic and structural elements.
 
 <!-- CONCLUSIONS_PLACEHOLDER_END -->
 
