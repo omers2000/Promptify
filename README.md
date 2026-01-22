@@ -171,7 +171,6 @@ def rank_candidates(candidates, target, weights):
 ```
 
 **Advantages:**
-- Leverages ReccoBeats' recommendation algorithm
 - Can discover tracks outside our local database
 - Seed songs guide the recommendation toward the user's intent
 
