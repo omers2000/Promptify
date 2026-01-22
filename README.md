@@ -103,7 +103,7 @@ graph TD
 
 | Component | Technology | Rationale |
 |-----------|------------|-----------|
-| **LLM** | Google Gemini 2.5 Flash Lite | Structured JSON output, fast inference, cost-effective |
+| **LLM** | Google Gemini 2.5 Flash Lite | Structured output and fast inference |
 | **Backend** | Python | Rich ecosystem for data science and API integration |
 | **Music Data API** | ReccoBeats API | Provides recommendation endpoints with audio feature filtering |
 | **Music Integration** | Spotify Web API (Spotipy) | Industry standard, rich metadata, playlist creation |
