@@ -266,17 +266,17 @@ def normalize_column(df, col_name):
     return df[col_name].clip(0, 1)  # Safety clamp for already-normalized features
 ```
 
-#### Step 3: Data Invariants
+#### Step 3: Storage
+
+The final database is saved as a single Parquet file containing both metadata (`track_id`, `track_name`, `artists`, `album_name`, `track_genre`) and normalized features. Parquet's columnar format enables efficient loading of only the feature columns needed for search.
+
+#### Data Invariants
 
 Two critical invariants are maintained throughout the system:
 
 **Column Order Invariant:** Features are stored in a strict order defined in `config/model_consts.py` (`acousticness`, `danceability`, `energy`, `tempo`, `valence`, `popularity`). This order is enforced in preprocessing, Gemini output schemas, and the search engine—ensuring vectorized distance calculations align correctly.
 
 **Row Alignment Invariant:** Row i in the features matrix corresponds exactly to row i in the metadata. Preprocessing stores both together in a single Parquet file. The search engine loads both from this file and **never reorders one independently of the other**—ensuring that indices returned from similarity search correctly map to track metadata.
-
-#### Step 4: Storage
-
-The final database is saved as a single Parquet file containing both metadata (`track_id`, `track_name`, `artists`, `album_name`, `track_genre`) and normalized features. Parquet's columnar format enables efficient loading of only the feature columns needed for search.
 
 **Database Statistics:**
 - Final size: ~90,000 tracks after cleaning
