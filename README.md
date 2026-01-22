@@ -21,8 +21,8 @@
     - [Prompt Engineering Challenge](#Prompt-Engineering-Challenge)
     - [Pipeline A: API-Based Recommendations (ReccoBeats)](#Pipeline-A-API-Based-Recommendations-(ReccoBeats))
     - [Pipeline B: Local Database Search](#Pipeline-B-Local-Database-Search)
-    - [Search Algorithm: Weighted Euclidean Distance](#Search-Algorithm-Weighted-Euclidean-Distance)
     - [Data Preprocessing](#Data-Preprocessing)
+    - [Search Algorithm: Weighted Euclidean Distance](#Search-Algorithm-Weighted-Euclidean-Distance)
    
 4. [Experimental Setup](#Experimental-Setup)
     - [Methodology](#Methodology)
@@ -217,21 +217,6 @@ scores = weighted_diff.sum(axis=1)  # Lower = Better match
 
 ---
 
-### Search Algorithm: Weighted Euclidean Distance
-
-Both pipelines use the same core similarity metric:
-
-$$\text{Distance Squared} = \sum_{i=1}^{n} w_i \cdot (x_i - t_i)^2$$
-
-Where:
-- $x_i$ = candidate track's feature value (normalized to 0-1)
-- $t_i$ = target feature value
-- $w_i$ = feature weight (0.0 = ignore, 1.0 = critical)
-
-Lower distance = better match.
-
----
-
 ### Data Preprocessing
 
 The local database is built from a CSV dataset ([Spotify Tracks Dataset on Kaggle](https://www.kaggle.com/datasets/maharshipandya/-spotify-tracks-dataset)) containing Spotify track metadata and audio features. The preprocessing pipeline (`songs_DB/preprocess.py`) transforms this raw data into an optimized format for fast similarity searches.
@@ -296,6 +281,21 @@ The final database is saved as a single Parquet file containing both metadata (`
 **Database Statistics:**
 - Final size: ~90,000 tracks after cleaning
 - File format: Parquet (float32 precision)
+
+---
+
+### Search Algorithm: Weighted Euclidean Distance
+
+Both pipelines use the same core similarity metric:
+
+$$\text{Distance Squared} = \sum_{i=1}^{n} w_i \cdot (x_i - t_i)^2$$
+
+Where:
+- $x_i$ = candidate track's feature value (normalized to 0-1)
+- $t_i$ = target feature value
+- $w_i$ = feature weight (0.0 = ignore, 1.0 = critical)
+
+Lower distance = better match.
 
 ---
 
