@@ -31,9 +31,9 @@
 
 5. [Results](#Results)
    
-6. [Implementation & Demo](#Implementation-&-Demo)
-    - [User Interface](#User-Interface)
-    - [Technical Challenges & Solutions](#Technical-Challenges-&-Solutions)
+6. [Implementation & Demo](#implementation--demo)
+    - [User Interface](#user-interface)
+    - [Technical Challenges & Solutions](#technical-challenges--solutions)
 
 7. [Code Overview](#Code-Overview)
     - [Project Structure](#Project-Structure)
