@@ -324,9 +324,9 @@ Each vote records:
 
 All data is logged to a Google Sheet for analysis.
 
-### Test Prompts
+### Example Prompts
 
-We encouraged users to test diverse prompt types:
+The app's UI encourages users to describe moods, vibes, or activities, for example:
 
 | Category | Example Prompts |
 |----------|-----------------|
