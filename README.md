@@ -128,7 +128,7 @@ The first challenge is translating a user's abstract natural language prompt int
 | `energy` | 0.0 - 1.0 | Perceptual measure of intensity and activity |
 | `tempo` | 0 - 250 BPM | Estimated beats per minute |
 | `valence` | 0.0 - 1.0 | Musical positiveness (0 = sad, 1 = happy) |
-| `popularity` | 0 - 100 | Current popularity on Spotify |
+| `popularity` | 0 - 100 | Estimated popularity |
 
 **Weight System:**
 
