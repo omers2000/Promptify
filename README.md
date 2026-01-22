@@ -456,7 +456,7 @@ Promptify/
 
 Handles communication with Google Gemini API:
 - Constructs system prompts based on the target pipeline
-- Enforces structured JSON output using Pydantic schemas
+- Enforces structured output using Pydantic schemas
 - Implements retry logic (3 attempts) with exponential backoff for failed generations
 
 **`pipelines/search_engine.py`**
