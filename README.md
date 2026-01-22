@@ -527,15 +527,9 @@ Based on initial testing:
 
 ### Limitations
 
-**Data & Coverage:**
-- **Database Size:** The local database (~90K tracks) is smaller than Spotify's full catalog ([100M+ tracks](https://newsroom.spotify.com/company-info/)).
-- **Temporal Bias:** The database reflects a snapshot in time and doesn't include new releases.
-
 **ReccoBeats API:**
 - **Third-Party Replication:** ReccoBeats attempts to replicate Spotify's now-deprecated Recommendations API, but without access to Spotify's proprietary algorithms and real-time data, recommendation quality may not match the original.
-- **Popularity Verification Gap:** While recommendations can target a desired popularity level, the audio features endpoint doesn't return popularity scores—so Pipeline A can aim for popularity but cannot verify or filter results by it.
 - **No Genre Filtering:** ReccoBeats doesn't support filtering recommendations by genre, limiting control over stylistic output.
-- **Stale Track IDs:** ReccoBeats occasionally returns track IDs that no longer exist on Spotify, requiring fallback handling.
 
 **Evaluation Challenges:**
 - **Subjective Success Criteria:** Translating abstract prompts (e.g., "songs that feel like a sunset") into numerical audio features is inherently subjective. What constitutes a "good" recommendation varies, making objective evaluation of system performance difficult.
