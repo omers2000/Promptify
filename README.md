@@ -285,26 +285,17 @@ def normalize_column(df, col_name):
 
 Two critical invariants are maintained throughout the system:
 
-**Column Ordering:** Features are stored and processed in a strict order defined in `config/model_consts.py`: `[acousticness, danceability, energy, tempo, valence, popularity]`. This order is enforced in preprocessing, Gemini output schemas, and the search engine—ensuring vectorized NumPy operations align correctly.
+**Column Order Invariant:** Features are stored in a strict order defined in `config/model_consts.py` (`acousticness`, `danceability`, `energy`, `tempo`, `valence`, `popularity`). This order is enforced in preprocessing, Gemini output schemas, and the search engine—ensuring vectorized distance calculations align correctly.
 
-**Row Alignment:** Row i in the features matrix corresponds exactly to row i in the metadata. This is preserved by calling `reset_index(drop=True)` after cleaning and storing both in a single Parquet file. After finding top-k tracks by similarity, the same indices retrieve track metadata for display.
+**Row Alignment Invariant:** Row i in the features matrix corresponds exactly to row i in the metadata. Preprocessing stores both together in a single Parquet file. The search engine loads both from this file and **never reorders one independently of the other**—ensuring that indices returned from similarity search correctly map to track metadata.
 
-#### Step 4: Unified Storage
+#### Step 4: Storage
 
-The final database combines metadata and normalized features into a single Parquet file:
-
-```python
-meta_columns = ['track_id', 'track_name', 'artists', 'album_name', 'track_genre']
-final_db = pd.concat([df[meta_columns], features_df], axis=1)
-final_db.to_parquet('tracks_db.parquet', engine='pyarrow', index=False)
-```
-
-**Benefits:** Parquet columnar format enables fast feature-only loading, PyArrow provides efficient vectorized operations, and single-file storage maintains row alignment.
+The final database is saved as a single Parquet file containing both metadata (`track_id`, `track_name`, `artists`, `album_name`, `track_genre`) and normalized features. Parquet's columnar format enables efficient loading of only the feature columns needed for search.
 
 **Database Statistics:**
 - Final size: ~90,000 tracks after cleaning
-- File format: Apache Parquet
-- Feature precision: float32 (memory-efficient while preserving accuracy)
+- File format: Parquet (float32 precision)
 
 ---
 
