@@ -281,47 +281,25 @@ def normalize_column(df, col_name):
     return df[col_name].clip(0, 1)  # Safety clamp for already-normalized features
 ```
 
-#### Step 3: Feature Ordering Invariant
+#### Step 3: Data Invariants
 
-A critical design constraint is the **strict feature ordering** defined in `config/model_consts.py`:
+Two critical invariants are maintained throughout the system:
 
-```python
-FEATURE_ORDER = [
-    'acousticness',
-    'danceability', 
-    'energy', 
-    'tempo',
-    'valence',  
-    'popularity'
-]
-```
+**Column Ordering:** Features are stored and processed in a strict order defined in `config/model_consts.py`: `[acousticness, danceability, energy, tempo, valence, popularity]`. This order is enforced in preprocessing, Gemini output schemas, and the search engine—ensuring vectorized NumPy operations align correctly.
 
-This ordering is enforced across the entire codebase:
-- **Preprocessing:** Features are stored in this exact order
-- **Gemini Output:** Pydantic schemas output values in this order
-- **Search Engine:** NumPy arrays expect this column order
-
-**Why this matters:** The weighted Euclidean distance calculation uses vectorized NumPy operations where feature positions must match between the target vector (from Gemini) and the database matrix.
+**Row Alignment:** Row i in the features matrix corresponds exactly to row i in the metadata. This is preserved by calling `reset_index(drop=True)` after cleaning and storing both in a single Parquet file. After finding top-k tracks by similarity, the same indices retrieve track metadata for display.
 
 #### Step 4: Unified Storage
 
 The final database combines metadata and normalized features into a single Parquet file:
 
 ```python
-# Metadata columns preserved for display
 meta_columns = ['track_id', 'track_name', 'artists', 'album_name', 'track_genre']
-
-# Combine metadata + normalized features
 final_db = pd.concat([df[meta_columns], features_df], axis=1)
-
-# Save as Parquet for efficient columnar access
 final_db.to_parquet('tracks_db.parquet', engine='pyarrow', index=False)
 ```
 
-**Storage Format Benefits:**
-- **Parquet columnar format:** Enables fast loading of only the feature columns needed for search
-- **PyArrow engine:** Provides efficient memory mapping and vectorized operations
-- **Single file:** Maintains row alignment invariant between metadata and features
+**Benefits:** Parquet columnar format enables fast feature-only loading, PyArrow provides efficient vectorized operations, and single-file storage maintains row alignment.
 
 **Database Statistics:**
 - Final size: ~90,000 tracks after cleaning
