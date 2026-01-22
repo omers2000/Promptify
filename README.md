@@ -447,10 +447,7 @@ Promptify/
 │   ├── auth.py                 # Spotify OAuth manager
 │   └── spotify_requests.py     # Spotify API wrapper classes
 |
-└── tests/
-    ├── test_data_sync.py       # Database integrity tests
-    ├── test_feature_alignment.py # Feature order consistency tests
-    └── test_search_engine.py   # Search algorithm tests
+└── tests/                      # Unit tests
 ```
 
 ### Key Components
