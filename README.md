@@ -31,7 +31,7 @@
 
 5. [Results](#Results)
    
-6. [Implementation & Demo](#Implementation-Demo)
+6. [Implementation & Demo](#Implementation-&-Demo)
     - [User Interface](#User-Interface)
 
 7. [Code Overview](#Code-Overview)
@@ -51,7 +51,7 @@
 
 ## Introduction
 
-Promptify is a web-based music recommendation system that allows users to generate Spotify playlists using natural language descriptions. Instead of manually searching for songs, users can describe their desired mood, activity, or atmosphere in plain English—such as *'energetic workout music with heavy beats'* or *'calm acoustic songs for studying'*—and receive personalized recommendations.
+Promptify is a web-based music recommendation system that allows users to generate Spotify playlists using natural language descriptions. Instead of manually searching for songs, users can describe their desired mood, activity, or atmosphere in plain English - such as *'energetic workout music with heavy beats'* or *'calm acoustic songs for studying'* - and receive personalized recommendations.
 
 The system is designed around a comparative architecture: it utilizes two different recommendation pipelines to provide results. Users can then vote on which playlist better matches their intent, enabling a data-driven comparison of different recommendation approaches.
 
@@ -274,9 +274,9 @@ The final database is saved as a single Parquet file containing both metadata (`
 
 Two critical invariants are maintained throughout the system:
 
-**Column Order Invariant:** Features are stored in a strict order defined in `config/model_consts.py` (`acousticness`, `danceability`, `energy`, `tempo`, `valence`, `popularity`). This order is enforced in preprocessing, Gemini output schemas, and the search engine—ensuring vectorized distance calculations align correctly.
+**Column Order Invariant:** Features are stored in a strict order defined in `config/model_consts.py` (`acousticness`, `danceability`, `energy`, `tempo`, `valence`, `popularity`). This order is enforced in preprocessing, Gemini output schemas and the search engine, ensuring vectorized distance calculations align correctly.
 
-**Row Alignment Invariant:** Row i in the features matrix corresponds exactly to row i in the metadata. Preprocessing stores both together in a single Parquet file. The search engine loads both from this file and **never reorders one independently of the other**—ensuring that indices returned from similarity search correctly map to track metadata.
+**Row Alignment Invariant:** Row *i* in the features matrix corresponds exactly to row *i* in the metadata. Preprocessing stores both together in a single Parquet file. The search engine loads both from this file and **never reorders one independently of the other**, ensuring that indices returned from similarity search correctly map to track metadata.
 
 **Database Statistics:**
 - Final size: ~90,000 tracks after cleaning
@@ -478,7 +478,7 @@ Defines Pydantic models for Gemini's structured output:
 
 ## Conclusions
 
-<!-- CONCLUSIONS_PLACEHOLDER_START -->
+**Delete after entering results!!!** <!-- CONCLUSIONS_PLACEHOLDER_START -->
 *Final conclusions will be written based on experimental results.*
 
 ### Preliminary Observations
@@ -507,7 +507,7 @@ Based on initial testing:
 
 1. **Expanded Audio Features:** Add more audio dimensions such as `instrumentalness` (useful for study/focus playlists), `speechiness` (filter spoken word), and `liveness` (prefer studio vs live recordings).
 
-2. **Metadata Filtering in Pipeline B:** Leverage existing database metadata (e.g., `track_genre`, `explicit`) to infer user intent from prompts more accurately. This would allow users to naturally request specific genres, avoid explicit content, or set duration preferences—enabling truly free-form input such as *'relaxing jazz for a coffee shop'*.
+2. **Metadata Filtering in Pipeline B:** Leverage existing database metadata (e.g., `track_genre`, `explicit`) to infer user intent from prompts more accurately. This would allow users to naturally request specific genres, avoid explicit content, or set duration preferences, enabling truly free-form input such as *'relaxing jazz for a coffee shop'*.
 
 3. **Negative Seeds:** Leverage ReccoBeats' negative seeds parameter in Pipeline A to let users specify styles to avoid (e.g., "energetic music but NOT electronic").
 
