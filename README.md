@@ -61,7 +61,8 @@ Human musical desires are frequently expressed through abstract concepts involvi
 
 ### Project Goals
 
-The objective of Promptify is to automate the translation of abstract user intent into a curated list of tracks. The solution utilizes the Natural Language Processing (NLP) capabilities of Google Gemini to analyze free-text prompts. The system distills this text into quantifiable audio parameters and features, which serve as the foundation for the search and retrieval process.
+The objective of Promptify is to automate the translation of abstract user intent into a curated list of tracks.
+The solution utilizes the Natural Language Processing (NLP) capabilities of Google Gemini to analyze free-text prompts. The system distills this text into quantifiable audio parameters and features, which serve as the foundation for the search and retrieval process.
 
 ### Research Question
 
