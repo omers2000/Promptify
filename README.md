@@ -506,13 +506,21 @@ Based on initial testing:
 ### Future Improvements
 
 1. **Expanded Audio Features:** Add more audio dimensions such as `instrumentalness` (useful for study/focus playlists), `speechiness` (filter spoken word), and `liveness` (prefer studio vs live recordings).
+
 2. **Metadata Filtering in Pipeline B:** Leverage existing database metadata (e.g., `track_genre`, `explicit`) to infer user intent from prompts more accurately. This would allow users to naturally request specific genres, avoid explicit content, or set duration preferences—enabling truly free-form input like "relaxing jazz for a coffee shop."
+
 3. **Negative Seeds:** Leverage ReccoBeats' negative seeds parameter in Pipeline A to let users specify styles to avoid (e.g., "energetic music but NOT electronic").
+
 4. **Personalization:** Integrate with user's Spotify listening history and saved tracks for personalized recommendations.
+
 5. **Larger Database:** Expand the local database or integrate with additional music data sources.
+
 6. **Feedback Loop:** Allow users to mark individual tracks as "liked" or "disliked" to refine results.
+
 7. **Playlist Length Customization:** Allow users to specify how many tracks they want instead of a fixed playlist size.
+
 8. **Mood Transitions:** Support dynamic prompts like "start calm and build to energetic" by ordering tracks to create a progression throughout the playlist.
+
 9. **Musician Mode:** Expose technical audio features (`key`, `mode`, `time_signature`) for musically-inclined users who want precise control over harmonic and structural elements.
 
 <!-- CONCLUSIONS_PLACEHOLDER_END -->
@@ -530,7 +538,7 @@ Based on initial testing:
 
 3. Sign in to your Spotify account and authorize the application
 
-4. Enter a playlist description (e.g., "chill lo-fi beats for studying late at night")
+4. Enter a playlist description (e.g., "chill music for studying late at night")
 
 5. Click **"Generate"** and wait for both playlists to be created
 
