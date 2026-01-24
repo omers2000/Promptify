@@ -1,63 +1,81 @@
-# Promptify: AI-Based Playlist Generator 🎵
-### **Authors:** Daniel Laroz and Omer Shapira
+# Promptify: AI-Powered Playlist Generation 🎵
+### *<u>Authors: Daniel Laroz and Omer Shapira</u>*
 
-![Project Banner / Main Screenshot](path/to/image.png)
-*(מומלץ לשים כאן צילום מסך אסתטי של המערכת או דיאגרמה כללית)*
-
-## Abstract
-This project presents "Promptify," a system designed to bridge the gap between abstract human musical intent and rigid database search mechanisms.  
-The primary goal is to enable users to generate personalized playlists based on free-text descriptions. The system leverages Large Language Models (LLMs) to process natural language inputs and translate them into quantitative audio features.  
-Furthermore, we conduct a comparative analysis between two distinct playlist generation methodologies:  
-(version #1) harnessing external algorithmic recommendations via an API, compared against a custom-developed heuristic model operating on a local, static repository.  
-(version #2) dynamic retrieval via a Music Service API and a custom similarity algorithm applied to a static dataset.
-
+## Live Demo
+[https://promptify-nlanmqgwehn5zr59dwxhlf.streamlit.app](https://promptify-nlanmqgwehn5zr59dwxhlf.streamlit.app)
 
 ---
+
 ## Table of Contents
 
 1. [Introduction](#Introduction)
    - [Background and Motivation](#Background-and-Motivation)
    - [Project Goals](#Project-Goals)
-   - [Contribution](#Contribution)
+   - [Research Question](#Research-Question)
      
 2. [System Design](#System-Design)
+    - [High-Level Architecture](#High-Level-Architecture)
+    - [Technologies](#Technologies)
      
-3. [Methods & Approaches](#Methods-&-Approaches)
+3. [Methods & Algorithms](#Methods--Algorithms)
+    - [The Prompt Engineering Challenge](#The-Prompt-Engineering-Challenge)
+    - [Pipeline A: API-Based Recommendations (ReccoBeats)](#Pipeline-A-API-Based-Recommendations-ReccoBeats)
+    - [Pipeline B: Local Database Search](#Pipeline-B-Local-Database-Search)
+    - [Data Preprocessing](#Data-Preprocessing)
+    - [Search Algorithm: Weighted Euclidean Distance](#Search-Algorithm-Weighted-Euclidean-Distance)
    
-4. [Experiments & Results](#Experiments-&-Results)
+4. [Experimental Setup](#Experimental-Setup)
+    - [Methodology](#Methodology)
+    - [Data Collection](#Data-Collection)
+    - [Example Prompts](#Example-Prompts)
+
+5. [Results](#Results)
    
-5. [Implementation & Demo](#Implementation-&-Demo)
+6. [Implementation & Demo](#Implementation--Demo)
+    - [User Interface](#User-Interface)
+
+7. [Code Overview](#Code-Overview)
+    - [Project Structure](#Project-Structure)
+    - [Key Components](#Key-Components)
      
-6. [Conclusions](#Conclusions)
+8. [Conclusions](#Conclusions)
+    - [Preliminary Observations](#Preliminary-Observations)
+    - [Limitations](#Limitations)
+    - [Future Improvements](#Future-Improvements)
 
-7. [Installation & Usage](#Installation-&-Usage)
+9. [Usage](#Usage)
 
-8. [References](#References)
+10. [References](#References)
 
 ---
 
 ## Introduction
+
+Promptify is a web-based music recommendation system that allows users to generate Spotify playlists using natural language descriptions. Instead of manually searching for songs, users can describe their desired mood, activity, or atmosphere in plain English - such as *'energetic workout music with heavy beats'* or *'calm acoustic songs for studying'* - and receive personalized recommendations.
+
+The system is designed around a comparative architecture: it utilizes two different recommendation pipelines to provide results. Users can then vote on which playlist better matches their intent, enabling a data-driven comparison of different recommendation approaches.
+
 ### Background and Motivation
-Current music streaming platforms, such as Spotify, predominantly rely on metadata-based search mechanisms. Users are typically limited to querying by specific artist names, track titles, distinct genres, or a finite set of predefined tags. Consequently, finding a suitable playlist often requires a manual, exhaustive search process: users must browse through numerous suggested playlists, filtering them one by one to find a match that aligns with their preferences.  
-This process imposes a significant cognitive load and consumes valuable time, often resulting in a compromise where the user settles for an imperfect playlist.
 
-
-Moreover, human musical desires are frequently expressed through abstract concepts involving "atmosphere," "vibes," or complex scenarios (e.g., "songs for a melancholic drive on a rainy night"). Existing keyword-based search algorithms struggle to interpret these semantic nuances, failing to map abstract descriptions to the appropriate musical content.
+Human musical preferences are frequently expressed through abstract concepts involving atmosphere or moods. However, standard search mechanisms often rely on specific artist names, track titles, or distinct genres. These traditional methods often fail to capture semantic nuances, making it difficult to map abstract user descriptions to relevant musical content.
 
 ### Project Goals
-The objective of "Promptify" is to automate the translation of abstract user intent into a concrete, curated list of tracks. The solution utilizes the advanced Natural Language Processing (NLP) capabilities of modern AI (Google Gemini) to analyze the user's free-text prompt. The system distills this text into quantifiable parameters and audio features, which serve as the foundation for the search and retrieval process.
 
-### Contribution
-Beyond the system implementation, this project focuses on a comparative study of algorithmic approaches. We evaluate and contrast two distinct methods for playlist generation:
+The objective of Promptify is to automate the translation of abstract user intent into a curated list of tracks.
+The solution leverages the Natural Language Processing (NLP) capabilities of Google Gemini to analyze free-text prompts. The system distills this text into quantifiable audio parameters and features, which serve as the foundation for the search and retrieval process.
 
-1. **Web-Based Recommendation Model:** Utilizing live API data to generate dynamic suggestions based on real-time trends and algorithms.
+### Research Question
 
-2. **Static Computational Model:** A custom-built algorithm applied to a pre-processed static dataset, calculating similarity and relevance locally.
+**Which approach yields better playlist recommendations: an API-based method that leverages external recommendation algorithms, or a local database search using weighted similarity metrics?**
+
+Beyond the system implementation, this project focuses on a comparative study of these two algorithmic approaches, evaluating their effectiveness through collected user feedback and runtime comparison.
 
 ---
 
 ## System Design
+
 ### High-Level Architecture
+
 ```mermaid
 graph TD
     classDef startEnd fill:#f9f,stroke:#333,stroke-width:2px,color:#000;
@@ -65,108 +83,460 @@ graph TD
     classDef decision fill:#ffe0b2,stroke:#e65100,stroke-width:2px,color:#000;
     classDef api fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px,color:#000;
 
-    User([User Input]):::startEnd --> Gemini[Gemini Interpretation]:::process
-    Gemini --> Split{Strategy Split}:::decision
+    User([User Prompt]):::startEnd --> Gemini[Gemini AI Interpretation]:::process
+    Gemini --> Split{Pipeline Split}:::decision
 
-    Split -- "Method A (API Based)" --> A_Data[Seeds & Params from Gemini]:::process
+    Split -- "Pipeline A: API-Based" --> A_Data[Seeds + Audio Features + Weights]:::process
     A_Data --> ReccoAPI[ReccoBeats API]:::api
-    ReccoAPI --> A_Filter[Filter Top Matches via Cosine Similarity]:::process
+    ReccoAPI --> A_Filter[Re-rank via Weighted Euclidean Distance]:::process
     A_Filter --> Merge(( ))
 
-    Split -- "Method B (Local Based)" --> B_Data[Params from Gemini]:::process
-    B_Data --> LocalDB[Get Top Matches via Cosine in Local DB]:::process
+    Split -- "Pipeline B: Local DB" --> B_Data[Audio Features + Weights]:::process
+    B_Data --> LocalDB[Weighted Euclidean Search in Parquet DB]:::process
     LocalDB --> Merge
 
-    Merge --> Spotify[Spotify API Integration]:::api
-    Spotify --> Create([Playlist Creation]):::startEnd
+    Merge --> Spotify[Spotify API: Create Playlists]:::api
+    Spotify --> Vote([User Votes for Better Playlist]):::startEnd
 ```
 
 ### Technologies
-* **LLM:** Google Gemini
-בחרנו בו לאחר שכלול של יכולות המודל, הנגישות שלו והנוחות שלו בהתממשקות ליתר הרכיבים של הפרוייקט
 
- (פירוט קצר למה נבחר – חלון קונטקסט, עלויות, יכולות JSON וכו').
-* **Backend:** Python.
-* **Music Data:** Spotify Web API (Spotipy).
-* **Frontend:** Streamlit (UI).
-
----
-
-## Methods & Approaches – *ליבת המחקר*
-[זהו החלק המרכזי של הדו"ח המחקרי. כאן תתאר את שתי הגישות שהשווית ביניהן.]
-
-### 4.1 אתגר ה-Prompt Engineering
-[הסבר כיצד אתה מעבד את הקלט הגולמי של המשתמש לפני שליחתו ל-Gemini.]
-
-### 4.2 גישה א': [תן שם לשיטה, למשל: "Direct Song Recommendation"]
-* **תיאור:** בשיטה זו, אנו מבקשים מ-Gemini להחזיר ישירות רשימה של שמות שירים ואמנים על סמך התיאור.
-* **תהליך:** פירוט הפרומפט שנשלח ל-Gemini, מבנה ה-JSON שמתקבל, ואיך מבוצע החיפוש בספוטיפיי (Search Query).
-* **יתרונות/חסרונות תיאורטיים:** (למשל: יצירתיות גבוהה אבל עלול להמציא שירים שלא קיימים).
-
-### 4.3 גישה ב': [תן שם לשיטה, למשל: "Audio Features Parameterization"]
-* **תיאור:** בשיטה זו, Gemini לא בוחר שירים, אלא מתרגם את הטקסט לפרמטרים מספריים של ספוטיפיי (Danceability, Energy, Valence, Genre seeds).
-* **תהליך:** הסבר כיצד מופו מילות תואר ("שמח", "רגוע") לערכים מספריים (0.8 Valence), ושימוש ב-Endpoint של `Get Recommendations` בספוטיפיי.
-* **יתרונות/חסרונות תיאורטיים:** (למשל: מבטיח שירים קיימים, אבל אולי פחות מדויק סמנטית לכוונת המשורר).
+| Component | Technology | Rationale |
+|-----------|------------|-----------|
+| **LLM** | Google Gemini 2.5 Flash Lite | Supports structured output and fast inference |
+| **Backend** | Python | Ease of development using libraries well suited to the project (NumPy, Pandas, API clients) |
+| **Music Data API** | ReccoBeats API | Provides recommendation endpoints with audio feature filtering |
+| **Music Integration** | Spotify Web API (Spotipy) | Industry standard and playlist creation |
+| **Local Database** | Parquet (PyArrow) | Columnar storage, fast vectorized operations with NumPy |
+| **Frontend** | Streamlit | Rapid prototyping, built-in state management, easy deployment |
+| **Data Collection** | Google Sheets API (gspread) | Simple vote logging, real-time collaboration |
 
 ---
 
-## Experiments & Results
-[כאן אתה משווה בין שתי הגישות שתוארו לעיל.]
+## Methods & Algorithms
 
-### 5.1 מתודולוגיית הבדיקה
-[איך בדקתם איזו שיטה טובה יותר?
-* **סט בדיקה:** רשימה של 10-20 פרומפטים מגוונים (למשל: אחד מופשט, אחד מבוסס ז'אנר, אחד מבוסס נוסטלגיה).
-* **מדדי הצלחה:** הערכה סובייקטיבית (משתמשים דירגו), או מדד אובייקטיבי (מרחק בין הז'אנר המבוקש לז'אנר שהתקבל).]
+### The Prompt Engineering Challenge
 
-### 5.2 תוצאות (Results)
-[הצג טבלאות או גרפים.]
+One of the main challenges is translating a user's abstract natural language prompt into quantifiable audio features. We use Google Gemini with structured output (Pydantic schemas) to ensure consistent, parseable responses.
 
-| Prompt Example | Method A Result (Top 3 Songs) | Method B Result (Top 3 Songs) | User Preference |
-|----------------|-------------------------------|-------------------------------|-----------------|
-| "Songs for coding late at night" | Song X, Song Y... | Song Z, Song W... | Method B |
-| "80s Rock workout" | ... | ... | Method A |
+**Audio Features Used:**
 
-### 5.3 ניתוח התוצאות
-* באיזה סוגי פרומפטים גישה א' ניצחה?
-* באיזה סוגים גישה ב' הייתה טובה יותר?
-* האם היו "הזיות" (Hallucinations) של ה-AI בגישה א'?
+| Feature | Range | Description |
+|---------|-------|-------------|
+| `acousticness` | 0.0 - 1.0 | Confidence measure of acoustic sound |
+| `danceability` | 0.0 - 1.0 | Suitability for dancing based on tempo, rhythm stability, beat strength |
+| `energy` | 0.0 - 1.0 | Perceptual measure of intensity and activity |
+| `tempo` | 0 - 250 BPM | Estimated beats per minute |
+| `valence` | 0.0 - 1.0 | Musical positiveness (0 = sad, 1 = happy) |
+| `popularity` | 0 - 100 | Estimated popularity |
 
----
+**Weight System:**
 
-## 6. Implementation & Demo
-### 6.1 אתגרים במימוש
-[פרט על קשיים טכניים: טיפול ב-Rate Limits, אימות מול ספוטיפיי (OAuth), פרסום JSON לא תקין מ-Gemini ואיך פתרתם אותם (Retry logic, Parser מתוחכם).]
+For each feature, Gemini assigns an importance weight (0.0 to 1.0):
+- **1.0** = Critical constraint (must match closely)
+- **0.0** = Irrelevant (ignore this feature)
 
-### 6.2 ממשק המשתמש (UI)
-[צילומי מסך של המערכת בפעולה]
-* **מסך הכניסה:** הזנת ה-Prompt.
-* **מסך התוצאות:** הצגת הפלייליסט שנוצר, הנגן המוטמע (אם יש), וכפתור השמירה לספוטיפיי.
+This allows the system to understand that "upbeat workout music" should heavily weight `energy` and `tempo`, while "chill background music" should prioritize `acousticness` and low `energy`.
 
 ---
 
-## 7. Conclusions
-* **מסקנה עיקרית:** איזו גישה עדיפה בסופו של דבר? (אולי שילוב של השתיים?)
-* **מגבלות:** מה המערכת לא יודעת לעשות טוב כרגע?
-* **עבודה עתידית:** רעיונות להמשך (למשל: Feedback Loop בו המשתמש מסמן שירים שלא אהב והמערכת לומדת, או שילוב תמונה כקלט).
+### Pipeline A: API-Based Recommendations (ReccoBeats)
+
+**Description:** This pipeline leverages external algorithmic recommendations from the ReccoBeats API, then re-ranks the results locally using our similarity metric.
+
+**Process:**
+
+1. **Gemini Interpretation:** The user prompt is sent to Gemini with a schema that requires:
+   - Target audio feature values
+   - Feature weights
+   - **5 seed songs** (track name + artist name)
+
+2. **Seed Resolution:** The suggested seed songs are searched on Spotify to obtain their track IDs. Invalid or non-existent songs are filtered out.
+
+3. **API Request:** The ReccoBeats API is called with:
+   - Seed track IDs
+   - Target audio feature values
+   - Request for 40 candidate tracks
+
+4. **Re-Ranking:** The 40 candidates are ranked using **Weighted Euclidean Distance** against the target features. The top 10 tracks are selected.
+
+```python
+# Core ranking algorithm (simplified)
+def rank_candidates(candidates, target, weights):
+    scores = []
+    for track in candidates:
+        distance = sum(w * (track[f] - target[f])**2 for f, w in zip(features, weights))
+        scores.append((track, distance))
+    return sorted(scores, key=lambda x: x[1])
+```
+
+**Advantages:**
+- Can discover tracks outside our local database
+- Seed songs guide the recommendation toward the user's intent
+
+**Disadvantages:**
+- Dependent on external API availability
+- ReccoBeats may occasionally recommend Track IDs that are not found on Spotify
+- ReccoBeats does not support hard filtering by popularity
+- The pipeline's runtime is slower
 
 ---
 
-## Installation & Usage
-1.  Browse to this URL:
+### Pipeline B: Local Database Search
+
+**Description:** This pipeline performs a direct similarity search on a pre-processed local database of ~90,000 tracks using weighted Euclidean distance.
+
+**Process:**
+
+1. **Gemini Interpretation:** The user prompt is sent to Gemini with a simpler schema:
+   - Target audio feature values
+   - Feature weights
+   - **No seed songs required**
+
+2. **Database Search:** A NumPy operation calculates the weighted Euclidean distance between the target vector and all tracks in the database:
+
+```python
+# Core Algorithm: Weighted Euclidean Distance
+diff = candidates_matrix - target_arr
+squared_diff = diff ** 2
+weighted_diff = squared_diff * weights_arr
+scores = weighted_diff.sum(axis=1)  # Lower = Better match
+```
+
+3. **Result Selection:** The top 10 tracks with the lowest distance scores are selected.
+
+**Advantages: (during the recommendation phase)**
+- No external API dependency
+- Faster response times
+- Full control over the ranking algorithm
+- Consistent, reproducible results
+
+**Disadvantages:**
+- Limited to tracks in the local database (~90K tracks vs ReccoBeats' larger catalog)
+- Database reflects a snapshot in time and doesn't include new releases
+
+---
+
+### Data Preprocessing
+
+The local database is constructed from a publicly available CSV dataset ([Spotify Tracks Dataset on Kaggle](https://www.kaggle.com/datasets/maharshipandya/-spotify-tracks-dataset)) comprising Spotify track metadata and audio features. The preprocessing pipeline (`songs_DB/preprocess.py`) transforms this raw data into an optimized format for fast similarity searches.
+
+#### Step 1: Data Cleaning
+
+The raw dataset undergoes several cleaning operations to ensure data quality:
+
+```python
+# Remove rows with missing values in critical columns
+df = df.dropna(subset=['track_name', 'artists', 'track_id'] + FEATURE_ORDER)
+
+# Remove duplicate tracks (based on track_id)
+df = df.drop_duplicates(subset=['track_id'])
+
+# Exclude tracks with invalid durations
+df = df[(df['duration_ms'] >= 60000) & (df['duration_ms'] <= 900000)]  # 1-15 minutes
+
+# Exclude tracks with invalid tempo
+df = df[df['tempo'] > 0]
+```
+
+**Cleaning Rationale:**
+- **Duration filtering (1-15 min):** Excludes intros, interludes, and abnormally long tracks that don't represent typical songs
+- **Tempo validation:** Removes corrupted entries where BPM detection failed
+- **Deduplication:** Ensures each track appears exactly once in the database
+
+#### Step 2: Feature Normalization
+
+All audio features are normalized to a [0, 1] range to ensure equal contribution during distance calculations:
+
+| Feature | Original Range | Normalization Method |
+|---------|----------------|---------------------|
+| `tempo` | 0-250+ BPM | `clip(0, 250) / 250` |
+| `popularity` | 0-100 | `clip(0, 100) / 100` |
+| `acousticness` | 0.0-1.0 | `clip(0, 1)` (already normalized) |
+| `danceability` | 0.0-1.0 | `clip(0, 1)` (already normalized) |
+| `energy` | 0.0-1.0 | `clip(0, 1)` (already normalized) |
+| `valence` | 0.0-1.0 | `clip(0, 1)` (already normalized) |
+
+```python
+def normalize_column(df, col_name):
+    if col_name == 'tempo':
+        return df[col_name].clip(0, 250) / 250.0
+    elif col_name == 'popularity':
+        return df[col_name].clip(0, 100) / 100.0
+    return df[col_name].clip(0, 1)  # Safety clamp for features that are already normalized
+```
+
+#### Step 3: Storage
+
+The final database is saved as a single Parquet file containing both metadata (`track_id`, `track_name`, `artists`, `album_name`, `track_genre`) and normalized features. Parquet's columnar format enables efficient loading of only the feature columns needed for search.
+
+#### Data Invariants
+
+Two critical invariants are maintained throughout the system:
+
+**Column Order Invariant:** Features are stored in a strict order defined in `config/model_consts.py` (`acousticness`, `danceability`, `energy`, `tempo`, `valence`, `popularity`). This order is enforced in preprocessing, Gemini output schemas and the search engine, ensuring vectorized distance calculations align correctly.
+
+**Row Alignment Invariant:** Row *i* in the features matrix corresponds exactly to row *i* in the metadata. Preprocessing stores both together in a single Parquet file. The search engine loads both from this file and **never performs row reordering**, ensuring that indices returned from similarity search correctly map to track metadata.
+
+**Database Statistics:**
+- Final size: ~90,000 tracks after cleaning
+- File format: Parquet (float32 precision)
+
+---
+
+### Search Algorithm: Weighted Euclidean Distance
+
+Both pipelines use the same core similarity metric:
+
+$$\text{Weighted Squared Distance} = \sum_{i=1}^{n} w_i \cdot (x_i - t_i)^2$$
+
+Where:
+- $x_i$ = candidate track's feature value (normalized to 0-1)
+- $t_i$ = target feature value
+- $w_i$ = feature weight (0.0 = ignore, 1.0 = critical)
+
+Lower distance = better match.
+
+---
+
+## Experimental Setup
+
+### Methodology
+
+We designed an A/B testing framework where users generate playlists using both pipelines simultaneously and vote for the playlist that better matches their prompt.
+
+**Voting Options:**
+- **Option A is Better** (Pipeline A wins)
+- **Option B is Better** (Pipeline B wins)
+- **It's a Tie** (Both equally good)
+
+**Important:** Users are **not informed** which pipeline corresponds to which option.
+
+### Data Collection
+
+Each vote records:
+- Timestamp
+- User's original prompt
+- Vote result (V1 / V2 / Tie)
+- Number of tracks in each playlist
+- Voter's Spotify display name
+- Runtime of each pipeline (seconds)
+
+All data is logged to a Google Sheet for analysis.
+
+### Example Prompts
+
+The app's UI encourages users to describe moods, vibes, or activities, for example:
+
+| Category | Example Prompts |
+|----------|-----------------|
+| Mood-based | "Melancholic songs for a rainy evening" |
+| Activity-based | "High-energy workout music" |
+| Scenario-based | "Background music for a dinner party" |
+| Abstract/Poetic | "Songs that feel like a sunset at the beach" |
+
+---
+
+## Results
+
+### Voting Data
+
+| Metric | Value |
+|--------|-------|
+| Total Votes | 15 |
+| Pipeline A Wins | 9 (60%) |
+| Pipeline B Wins | 6 (40%) |
+| Ties | 0 (0%) |
+
+### Performance Comparison
+
+| Metric | Pipeline A (API) | Pipeline B (Local) |
+|--------|------------------|-------------------|
+| Average Runtime | 4.9292 seconds | 1.3954 seconds |
+| Success Rate | 100% | 100% |
+
+### Analysis by Prompt Type
+
+| Prompt Category | Pipeline A Wins | Pipeline B Wins | Ties |
+|-----------------|-----------------|-----------------|------|
+| Activity-based | 3 | 4 | 0 |
+| Genre-specific | 2 | 2 | 0 |
+| Scenario-based | 4 | 0 | 0 |
+
+Full voting data is available in the [Google Sheet](https://docs.google.com/spreadsheets/d/1l-iMIcJhzhHIiFUqJFM6Dm1RgMYds4WEhrpl-XwZkWc/edit?usp=sharing).
+
+---
+
+## Implementation & Demo
+
+### User Interface
+
+The Streamlit application provides a clean and intuitive interface:
+
+**1. Login Screen**
+
+Users authenticate with their Spotify account via OAuth 2.0 to enable playlist creation.
+
+![Login Screenshot](https://github.com/omers2000/Promptify/blob/daniel_report_2/images/login_screen.png)
+
+**2. Prompt Input**
+
+Users enter a free-text description of their desired playlist.
+
+![Input Screenshot](https://github.com/omers2000/Promptify/blob/daniel_report_2/images/input_screen.png)
+
+**3. Results & Voting**
+
+Both playlists are displayed side-by-side with links to listen on Spotify. Users vote for their preferred option.
+
+![Results Screenshot](https://github.com/omers2000/Promptify/blob/daniel_report_2/images/result_screen.jpeg)
+
+---
+
+## Code Overview
+
+### Project Structure
+
+```
+Promptify/
+├── app.py                      # Main Streamlit application
+├── requirements.txt            # Python dependencies
+|
+├── config/
+│   ├── model_consts.py         # Feature order, playlist length, etc.
+│   ├── rb_consts.py            # ReccoBeats API configuration
+│   └── spotify_consts.py       # Spotify OAuth scopes
+|
+├── data_class/
+│   └── recommendation_params.py # Pydantic models for Gemini schemas
+|
+├── llm/
+│   └── llm_prompt_interpreter.py # Gemini API integration
+|
+├── pipelines/
+│   ├── __init__.py             # Exports run_pipeline_v1, run_pipeline_v2
+│   ├── api_pipeline.py         # Pipeline A: ReccoBeats-based
+│   ├── db_pipeline.py          # Pipeline B: Local database
+│   ├── search_engine.py        # Core similarity algorithms
+│   └── shared.py               # Shared utilities (Gemini interpretation)
+|
+├── rb/
+│   ├── rb_functions.py         # ReccoBeats API functions
+│   └── request_sender.py       # HTTP request wrapper
+|
+├── songs_DB/
+│   ├── preprocess.py           # Database preprocessing script
+│   └── tracks_db.parquet       # Processed track database
+|
+├── spotify/
+│   ├── auth.py                 # Spotify OAuth manager
+│   └── spotify_requests.py     # Spotify API wrapper classes
+|
+└── tests/                      # Unit tests
+```
+
+### Key Components
+
+**`llm/llm_prompt_interpreter.py`**
+
+Handles communication with Google Gemini API:
+- Constructs system prompts based on the target pipeline
+- Enforces structured output using Pydantic schemas
+- Implements retry logic (3 attempts) for failed generations
+
+**`pipelines/search_engine.py`**
+
+Contains the core similarity algorithms:
+- `_calculate_weighted_distance()`: Vectorized weighted Euclidean distance using NumPy
+- `rank_reccobeats_candidates()`: Re-ranks API results (for Pipeline A)
+- `search_db()`: Searches the local database using `argpartition` for efficient top-k selection (for Pipeline B)
+
+**`data_class/recommendation_params.py`**
+
+Defines Pydantic models for Gemini's structured output:
+- `AudioFeatures`: Target values for each audio dimension
+- `FeatureWeights`: Importance weights for ranking
+- `LocalSearchParams`: Schema for Pipeline B (no seeds)
+- `ReccoBeatsParams`: Schema for Pipeline A (includes seeds)
+
+---
+
+## Conclusions
+
+### Observations
+
+Based on our experimental results:
+
+1. **Response Time:** Pipeline B (Local) is approximately 3.5x faster than Pipeline A (1.40s vs 4.93s average), as it avoids external API calls.
+
+2. **User Preference:** Pipeline A (API-based) won 60% of votes overall, suggesting that seed-based recommendations often better matched user intent, despite the slower response time.
+
+3. **Prompt Type Matters:** Scenario-based prompts (e.g., "birthday", "pool party", "celebration") showed the clearest pattern - Pipeline A won all 4 prompts, which suggests that seed-based recommendations may be better suited to capturing the nuanced vibe of specific scenarios. For activity-based and genre-specific prompts, both pipelines performed similarly.
+
+### Limitations
+
+**ReccoBeats API:**
+- **Third-Party Replication:** ReccoBeats attempts to replicate Spotify's now-deprecated Recommendations API, but without access to Spotify's proprietary algorithms and real-time data, recommendation quality may not match the original.
+- **No Genre Filtering:** ReccoBeats doesn't support filtering recommendations by genre, limiting control over stylistic output.
+
+**Evaluation Challenges:**
+- **Subjective Success Criteria:** Translating abstract prompts (e.g., "songs that feel like a sunset") into numerical audio features is inherently subjective. What constitutes a "good" recommendation is highly subjective, making quantitative evaluation of system performance challenging.
+
+**Platform Constraints:**
+- **Spotify Developer Quota:** The app operates in Spotify's development mode, which limits access to a small number of pre-approved users.
+
+### Future Improvements
+
+1. **Expanded Audio Features:** Future improvements could include additional audio dimensions such as `instrumentalness` (useful for study/focus playlists) and `speechiness` (filter spoken word), and `liveness` (detects spoken words, useful to get rap or spoken music). These features were intentionally not included in the current version to focus on the most impactful core features.
+
+2. **Metadata Filtering in Pipeline B:** Leverage existing database metadata (e.g., `track_genre`, `explicit`) to infer user intent from prompts more accurately. This would allow users to naturally request specific genres, avoid explicit content, or set duration preferences, enabling truly free-form input such as *'relaxing jazz for a coffee shop'*.
+
+3. **Negative Seeds:** Leverage ReccoBeats' negative seeds parameter in Pipeline A to let users specify tracks they dislike or want to avoid, guiding recommendations away from similar content.
+
+4. **Personalization:** Integrate with user's Spotify listening history and saved tracks for personalized recommendations.
+
+5. **Larger Database:** Expand the local database or integrate with additional music data sources.
+
+6. **Feedback Loop:** Allow users to mark individual tracks as "liked" or "disliked" to refine results.
+
+7. **Playlist Length Customization:** Enable users to specify how many tracks they want instead of a fixed playlist size.
+
+8. **Mood Transitions:** Support dynamic prompts like "start calm and build to energetic" by ordering tracks to create a progression throughout the playlist.
+
+9. **Musician Mode:** Expose technical audio features (`key`, `mode`, `time_signature`) for musically-inclined users who want precise control over harmonic and structural elements.
+
+<!-- CONCLUSIONS_PLACEHOLDER_END -->
+
+---
+
+## Usage
+
+1. Navigate to this URL:
     ```bash
-    https://promptify-nlanmqgwehn5zr59dwxhlf.streamlit.app/
+    https://promptify-nlanmqgwehn5zr59dwxhlf.streamlit.app
     ```
-2.  Press the 'Login with Spotify' buttom
-    
-3.  Sign in to your Spotify account and allow the permissions
 
-4.  Enter your playlist description and press 'Generate'
+2. Click the **"Login with Spotify"** button in the sidebar
 
-5.  Listen to both playlist in your Spotify account and choose which one is better matched your description
+3. Sign in to your Spotify account and authorize the application
+
+4. Enter a playlist description (e.g., "chill music for studying late at night")
+
+5. Click **"Generate"** and wait for both playlists to be created
+
+6. Listen to both playlists on Spotify and vote for the one that better matches your description
 
 ---
 
 ## References
-* https://developer.spotify.com/documentation/web-api - Spotify Web API Documentation.
-* https://ai.google.dev/gemini-api/docs - Google Gemini API Documentation.
-* https://reccobeats.com/docs/documentation/introduction - ReccoBeats API Documentation
+
+- [Spotify Web API Documentation](https://developer.spotify.com/documentation/web-api)
+- [Google Gemini API Documentation](https://ai.google.dev/gemini-api/docs)
+- [ReccoBeats API Documentation](https://reccobeats.com/docs/documentation/introduction)
+- [Streamlit Documentation](https://docs.streamlit.io/)
+- [Spotipy Library](https://spotipy.readthedocs.io/)
+- [gspread Library](https://docs.gspread.org/)
+- [NumPy Documentation](https://numpy.org/doc/)
+- [Pandas Documentation](https://pandas.pydata.org/docs/)
+- [PyArrow Documentation](https://arrow.apache.org/docs/python/)
+- [Spotify Tracks Dataset (Kaggle)](https://www.kaggle.com/datasets/maharshipandya/-spotify-tracks-dataset)
