@@ -364,7 +364,9 @@ The app's UI encourages users to describe moods, vibes, or activities, for examp
 | Genre-specific | 2 | 2 | 0 |
 | Scenario-based | 4 | 0 | 0 |
 
-**Observation:** Scenario-based prompts (e.g., "birthday", "pool party", "celebration") showed the clearest pattern - Pipeline A won all 4 prompts, which may suggest that seed-based recommendations are better suited to capture the nuanced vibe of specific scenarios.
+### Observation
+
+Scenario-based prompts (e.g., "birthday", "pool party", "celebration") showed the clearest pattern - Pipeline A won all 4 prompts, which may suggest that seed-based recommendations are better suited to capture the nuanced vibe of specific scenarios.
 
 ---
 
