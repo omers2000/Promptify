@@ -343,40 +343,41 @@ The app's UI encourages users to describe moods, vibes, or activities, for examp
 ### Voting Data
 
 <!-- DATA_PLACEHOLDER_START -->
-*Results will be populated from Google Sheets data.*
 
 | Metric | Value |
 |--------|-------|
-| Total Votes | TBD |
-| Pipeline A Wins | TBD |
-| Pipeline B Wins | TBD |
-| Ties | TBD |
+| Total Votes | 15 |
+| Pipeline A Wins | 9 (60%) |
+| Pipeline B Wins | 6 (40%) |
+| Ties | 0 (0%) |
 
 <!-- DATA_PLACEHOLDER_END -->
 
 ### Performance Comparison
 
 <!-- PERFORMANCE_PLACEHOLDER_START -->
-*Performance metrics will be populated from Google Sheets data.*
 
 | Metric | Pipeline A (API) | Pipeline B (Local) |
 |--------|------------------|-------------------|
-| Average Runtime | TBD | TBD |
-| Success Rate | TBD | TBD |
+| Average Runtime | 4.89 seconds | 1.39 seconds |
+| Success Rate | 100% | 100% |
 
 <!-- PERFORMANCE_PLACEHOLDER_END -->
 
 ### Analysis by Prompt Type
 
 <!-- ANALYSIS_PLACEHOLDER_START -->
-*Detailed analysis will be added based on collected data.*
 
 | Prompt Category | Pipeline A Wins | Pipeline B Wins | Ties |
 |-----------------|-----------------|-----------------|------|
-| Mood-based | TBD | TBD | TBD |
-| Activity-based | TBD | TBD | TBD |
-| Genre-specific | TBD | TBD | TBD |
-| Scenario-based | TBD | TBD | TBD |
+| Activity-based | 3 | 4 | 0 |
+| Genre-specific | 2 | 2 | 0 |
+| Scenario-based | 4 | 0 | 0 |
+
+**Observations by Category:**
+- **Activity-based prompts** (e.g., "workout music", "studying", "cleaning"): Pipeline B performed slightly better, possibly due to precise feature matching for well-defined activities.
+- **Genre-specific prompts** (e.g., "classic rock", "Brit rock"): Both pipelines performed equally well, each winning 2 votes.
+- **Scenario-based prompts** (e.g., "birthday", "pool party", "celebration"): Pipeline A dominated with 4-0 wins, suggesting that seed-based recommendations better capture the nuanced vibe of specific scenarios and events.
 
 <!-- ANALYSIS_PLACEHOLDER_END -->
 
