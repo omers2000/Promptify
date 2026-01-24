@@ -17,7 +17,7 @@
     - [High-Level Architecture](#High-Level-Architecture)
     - [Technologies](#Technologies)
      
-3. [Methods & Approaches](#Methods-&-Approaches)
+3. [Methods & Algorithms](#Methods-&-Algorithms)
     - [The Prompt Engineering Challenge](#The-Prompt-Engineering-Challenge)
     - [Pipeline A: API-Based Recommendations (ReccoBeats)](#Pipeline-A-API-Based-Recommendations-(ReccoBeats))
     - [Pipeline B: Local Database Search](#Pipeline-B-Local-Database-Search)
