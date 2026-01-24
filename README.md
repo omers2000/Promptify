@@ -364,10 +364,7 @@ The app's UI encourages users to describe moods, vibes, or activities, for examp
 | Genre-specific | 2 | 2 | 0 |
 | Scenario-based | 4 | 0 | 0 |
 
-**Observations by Category:**
-- **Activity-based prompts** (e.g., "workout music", "studying", "cleaning"): Pipeline B performed slightly better, winning 4 out of 7 prompts.
-- **Genre-specific prompts** (e.g., "classic rock", "Brit rock"): Both pipelines performed equally well, each winning 2 votes.
-- **Scenario-based prompts** (e.g., "birthday", "pool party", "celebration"): Pipeline A won all 4 prompts, which may suggest that seed-based recommendations are better suited to capture the nuanced vibe of specific scenarios.
+**Observation:** Scenario-based prompts (e.g., "birthday", "pool party", "celebration") showed the clearest pattern - Pipeline A won all 4 prompts, which may suggest that seed-based recommendations are better suited to capture the nuanced vibe of specific scenarios.
 
 ---
 
