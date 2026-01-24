@@ -4,6 +4,8 @@
 ## Live Demo
 [https://promptify-nlanmqgwehn5zr59dwxhlf.streamlit.app](https://promptify-nlanmqgwehn5zr59dwxhlf.streamlit.app)
 
+> **Access Note:** This app uses Spotify's API in development mode. Only users whose email has been added to our Spotify Developer Dashboard can log in. Contact us to request access.
+
 ---
 
 ## Table of Contents
@@ -510,6 +512,8 @@ Based on our experimental results:
 ---
 
 ## Usage
+
+> **Access Note:** This app uses Spotify's API in development mode. Only users whose email has been added to our Spotify Developer Dashboard can log in. Contact us to request access.
 
 1. Navigate to this URL:
     ```bash
