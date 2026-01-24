@@ -31,7 +31,7 @@
 
 5. [Results](#Results)
    
-6. [Implementation & Demo](#Implementation-&-Demo)
+6. [Implementation & Demo](#Implementation--Demo)
     - [User Interface](#User-Interface)
 
 7. [Code Overview](#Code-Overview)
