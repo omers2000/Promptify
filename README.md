@@ -342,8 +342,6 @@ The app's UI encourages users to describe moods, vibes, or activities, for examp
 
 ### Voting Data
 
-<!-- DATA_PLACEHOLDER_START -->
-
 | Metric | Value |
 |--------|-------|
 | Total Votes | 15 |
@@ -351,22 +349,14 @@ The app's UI encourages users to describe moods, vibes, or activities, for examp
 | Pipeline B Wins | 6 (40%) |
 | Ties | 0 (0%) |
 
-<!-- DATA_PLACEHOLDER_END -->
-
 ### Performance Comparison
-
-<!-- PERFORMANCE_PLACEHOLDER_START -->
 
 | Metric | Pipeline A (API) | Pipeline B (Local) |
 |--------|------------------|-------------------|
-| Average Runtime | 4.89 seconds | 1.39 seconds |
+| Average Runtime | 4.8878 seconds | 1.3936 seconds |
 | Success Rate | 100% | 100% |
 
-<!-- PERFORMANCE_PLACEHOLDER_END -->
-
 ### Analysis by Prompt Type
-
-<!-- ANALYSIS_PLACEHOLDER_START -->
 
 | Prompt Category | Pipeline A Wins | Pipeline B Wins | Ties |
 |-----------------|-----------------|-----------------|------|
@@ -378,8 +368,6 @@ The app's UI encourages users to describe moods, vibes, or activities, for examp
 - **Activity-based prompts** (e.g., "workout music", "studying", "cleaning"): Pipeline B performed slightly better, possibly due to precise feature matching for well-defined activities.
 - **Genre-specific prompts** (e.g., "classic rock", "Brit rock"): Both pipelines performed equally well, each winning 2 votes.
 - **Scenario-based prompts** (e.g., "birthday", "pool party", "celebration"): Pipeline A dominated with 4-0 wins, suggesting that seed-based recommendations better capture the nuanced vibe of specific scenarios and events.
-
-<!-- ANALYSIS_PLACEHOLDER_END -->
 
 ---
 
@@ -478,9 +466,6 @@ Defines Pydantic models for Gemini's structured output:
 ---
 
 ## Conclusions
-
-**Delete after entering results!!!** <!-- CONCLUSIONS_PLACEHOLDER_START -->
-*Final conclusions will be written based on experimental results.*
 
 ### Preliminary Observations
 
