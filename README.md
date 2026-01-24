@@ -106,7 +106,7 @@ graph TD
 | **LLM** | Google Gemini 2.5 Flash Lite | Supports structured output and fast inference |
 | **Backend** | Python | Ease of development using libraries well suited to the project (NumPy, Pandas, API clients) |
 | **Music Data API** | ReccoBeats API | Provides recommendation endpoints with audio feature filtering |
-| **Music Integration** | Spotify Web API (Spotipy) | Industry standard, rich metadata, playlist creation |
+| **Music Integration** | Spotify Web API (Spotipy) | Industry standard and playlist creation |
 | **Local Database** | Parquet (PyArrow) | Columnar storage, fast vectorized operations with NumPy |
 | **Frontend** | Streamlit | Rapid prototyping, built-in state management, easy deployment |
 | **Data Collection** | Google Sheets API (gspread) | Simple vote logging, real-time collaboration |
@@ -117,7 +117,7 @@ graph TD
 
 ### The Prompt Engineering Challenge
 
-The first challenge is translating a user's abstract natural language prompt into quantifiable audio features. We use Google Gemini with structured output (Pydantic schemas) to ensure consistent, parseable responses.
+One of the main challenges is translating a user's abstract natural language prompt into quantifiable audio features. We use Google Gemini with structured output (Pydantic schemas) to ensure consistent, parseable responses.
 
 **Audio Features Used:**
 
@@ -276,7 +276,7 @@ Two critical invariants are maintained throughout the system:
 
 **Column Order Invariant:** Features are stored in a strict order defined in `config/model_consts.py` (`acousticness`, `danceability`, `energy`, `tempo`, `valence`, `popularity`). This order is enforced in preprocessing, Gemini output schemas and the search engine, ensuring vectorized distance calculations align correctly.
 
-**Row Alignment Invariant:** Row *i* in the features matrix corresponds exactly to row *i* in the metadata. Preprocessing stores both together in a single Parquet file. The search engine loads both from this file and **never reorders one independently of the other**, ensuring that indices returned from similarity search correctly map to track metadata.
+**Row Alignment Invariant:** Row *i* in the features matrix corresponds exactly to row *i* in the metadata. Preprocessing stores both together in a single Parquet file. The search engine loads both from this file and **never performs row reordering**, ensuring that indices returned from similarity search correctly map to track metadata.
 
 **Database Statistics:**
 - Final size: ~90,000 tracks after cleaning
@@ -288,7 +288,7 @@ Two critical invariants are maintained throughout the system:
 
 Both pipelines use the same core similarity metric:
 
-$$\text{Distance Squared} = \sum_{i=1}^{n} w_i \cdot (x_i - t_i)^2$$
+$$\text{Weighted Squared Distance} = \sum_{i=1}^{n} w_i \cdot (x_i - t_i)^2$$
 
 Where:
 - $x_i$ = candidate track's feature value (normalized to 0-1)
@@ -332,7 +332,6 @@ The app's UI encourages users to describe moods, vibes, or activities, for examp
 |----------|-----------------|
 | Mood-based | "Melancholic songs for a rainy evening" |
 | Activity-based | "High-energy workout music" |
-| Genre-specific | "90s hip-hop classics" |
 | Scenario-based | "Background music for a dinner party" |
 | Abstract/Poetic | "Songs that feel like a sunset at the beach" |
 
@@ -488,7 +487,7 @@ Based on our experimental results:
 
 ### Future Improvements
 
-1. **Expanded Audio Features:** Add more audio dimensions such as `instrumentalness` (useful for study/focus playlists), `speechiness` (filter spoken word), and `liveness` (prefer studio vs live recordings).
+1. **Expanded Audio Features:** Future improvements could include additional audio dimensions such as `instrumentalness` (useful for study/focus playlists) and `speechiness` (filter spoken word), and `liveness` (detects spoken words, useful to get rap or spoken music). These features were intentionally not included in the current version to focus on the most impactful core features.
 
 2. **Metadata Filtering in Pipeline B:** Leverage existing database metadata (e.g., `track_genre`, `explicit`) to infer user intent from prompts more accurately. This would allow users to naturally request specific genres, avoid explicit content, or set duration preferences, enabling truly free-form input such as *'relaxing jazz for a coffee shop'*.
 
