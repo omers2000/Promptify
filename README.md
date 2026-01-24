@@ -364,10 +364,6 @@ The app's UI encourages users to describe moods, vibes, or activities, for examp
 | Genre-specific | 2 | 2 | 0 |
 | Scenario-based | 4 | 0 | 0 |
 
-### Observation
-
-Scenario-based prompts (e.g., "birthday", "pool party", "celebration") showed the clearest pattern - Pipeline A won all 4 prompts, which may suggest that seed-based recommendations are better suited to capture the nuanced vibe of specific scenarios.
-
 ---
 
 ## Implementation & Demo
@@ -474,7 +470,7 @@ Based on our experimental results:
 
 2. **User Preference:** Pipeline A (API-based) won 60% of votes overall, suggesting that seed-based recommendations often better matched user intent despite the slower response time.
 
-3. **Prompt Type Matters:** The clearest difference emerged with scenario-based prompts (e.g., "birthday", "pool party"), where Pipeline A won all 4 votes. For activity-based and genre-specific prompts, both pipelines performed similarly.
+3. **Prompt Type Matters:** Scenario-based prompts (e.g., "birthday", "pool party", "celebration") showed the clearest pattern - Pipeline A won all 4 prompts, which may suggest that seed-based recommendations are better suited to capture the nuanced vibe of specific scenarios. For activity-based and genre-specific prompts, both pipelines performed similarly.
 
 ### Limitations
 
