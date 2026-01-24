@@ -470,9 +470,9 @@ Based on our experimental results:
 
 1. **Response Time:** Pipeline B (Local) is approximately 3.5x faster than Pipeline A (1.40s vs 4.93s average), as it avoids external API calls.
 
-2. **User Preference:** Pipeline A (API-based) won 60% of votes overall, suggesting that seed-based recommendations often better matched user intent despite the slower response time.
+2. **User Preference:** Pipeline A (API-based) won 60% of votes overall, suggesting that seed-based recommendations often better matched user intent, despite the slower response time.
 
-3. **Prompt Type Matters:** Scenario-based prompts (e.g., "birthday", "pool party", "celebration") showed the clearest pattern - Pipeline A won all 4 prompts, which may suggest that seed-based recommendations are better suited to capture the nuanced vibe of specific scenarios. For activity-based and genre-specific prompts, both pipelines performed similarly.
+3. **Prompt Type Matters:** Scenario-based prompts (e.g., "birthday", "pool party", "celebration") showed the clearest pattern - Pipeline A won all 4 prompts, which suggests that seed-based recommendations may be better suited to capturing the nuanced vibe of specific scenarios. For activity-based and genre-specific prompts, both pipelines performed similarly.
 
 ### Limitations
 
