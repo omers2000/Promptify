@@ -17,9 +17,9 @@
     - [High-Level Architecture](#High-Level-Architecture)
     - [Technologies](#Technologies)
      
-3. [Methods & Algorithms](#Methods-&-Algorithms)
+3. [Methods & Algorithms](#Methods--Algorithms)
     - [The Prompt Engineering Challenge](#The-Prompt-Engineering-Challenge)
-    - [Pipeline A: API-Based Recommendations (ReccoBeats)](#Pipeline-A-API-Based-Recommendations-(ReccoBeats))
+    - [Pipeline A: API-Based Recommendations (ReccoBeats)](#Pipeline-A-API-Based-Recommendations-ReccoBeats)
     - [Pipeline B: Local Database Search](#Pipeline-B-Local-Database-Search)
     - [Data Preprocessing](#Data-Preprocessing)
     - [Search Algorithm: Weighted Euclidean Distance](#Search-Algorithm-Weighted-Euclidean-Distance)
@@ -27,7 +27,7 @@
 4. [Experimental Setup](#Experimental-Setup)
     - [Methodology](#Methodology)
     - [Data Collection](#Data-Collection)
-    - [Test Prompts](#Test-Prompts)
+    - [Example Prompts](#Example-Prompts)
 
 5. [Results](#Results)
    
