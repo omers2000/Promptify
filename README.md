@@ -364,6 +364,8 @@ The app's UI encourages users to describe moods, vibes, or activities, for examp
 | Genre-specific | 2 | 2 | 0 |
 | Scenario-based | 4 | 0 | 0 |
 
+Full voting data is available in the [Google Sheet](https://docs.google.com/spreadsheets/d/1l-iMIcJhzhHIiFUqJFM6Dm1RgMYds4WEhrpl-XwZkWc/edit?usp=sharing).
+
 ---
 
 ## Implementation & Demo
