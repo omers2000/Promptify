@@ -353,7 +353,7 @@ The app's UI encourages users to describe moods, vibes, or activities, for examp
 
 | Metric | Pipeline A (API) | Pipeline B (Local) |
 |--------|------------------|-------------------|
-| Average Runtime | 4.8878 seconds | 1.3936 seconds |
+| Average Runtime | 4.9292 seconds | 1.3954 seconds |
 | Success Rate | 100% | 100% |
 
 ### Analysis by Prompt Type
