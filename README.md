@@ -466,15 +466,15 @@ Defines Pydantic models for Gemini's structured output:
 
 ## Conclusions
 
-### Preliminary Observations
+### Observations
 
-Based on initial testing:
+Based on our experimental results:
 
-1. **Response Time:** Pipeline B (Local) is consistently faster, as it does not require external API calls.
+1. **Response Time:** Pipeline B (Local) is approximately 3.5x faster than Pipeline A (1.40s vs 4.93s average), as it avoids external API calls.
 
-2. **Seed Quality:** Pipeline A's effectiveness heavily depends on Gemini's ability to suggest valid, relevant seed songs.
+2. **User Preference:** Pipeline A (API-based) won 60% of votes overall, suggesting that seed-based recommendations often better matched user intent despite the slower response time.
 
-3. **Diversity vs. Precision:** Pipeline A tends to yield more diverse recommendations due to ReccoBeats' recommendation algorithm, while Pipeline B produces more precisely matched tracks.
+3. **Prompt Type Matters:** The clearest difference emerged with scenario-based prompts (e.g., "birthday", "pool party"), where Pipeline A won all 4 votes. For activity-based and genre-specific prompts, both pipelines performed similarly.
 
 ### Limitations
 
