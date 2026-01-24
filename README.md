@@ -509,7 +509,7 @@ Based on initial testing:
 
 2. **Metadata Filtering in Pipeline B:** Leverage existing database metadata (e.g., `track_genre`, `explicit`) to infer user intent from prompts more accurately. This would allow users to naturally request specific genres, avoid explicit content, or set duration preferences, enabling truly free-form input such as *'relaxing jazz for a coffee shop'*.
 
-3. **Negative Seeds:** Leverage ReccoBeats' negative seeds parameter in Pipeline A to let users specify styles to avoid (e.g., "energetic music but NOT electronic").
+3. **Negative Seeds:** Leverage ReccoBeats' negative seeds parameter in Pipeline A to let users specify tracks they dislike or want to avoid, guiding recommendations away from similar content.
 
 4. **Personalization:** Integrate with user's Spotify listening history and saved tracks for personalized recommendations.
 
